@@ -280,6 +280,13 @@ export interface ApprovalRequest {
   preview: ApprovalPreview;
   /** The site's icon from its grant, saved and checked when it connected; absent for Gleam's own requests. */
   siteIcon?: string | null;
+  /**
+   * The wallet this request signs or sends from, pinned when the request
+   * was made — never the wallet that happens to be active when the window
+   * loads. The approval shows it as From. Absent for requests that sign
+   * nothing (connect, addToken) and when the pinned wallet no longer exists.
+   */
+  signingWallet?: { id: string; address: string };
   /** Set once a hardware wallet's request is approved and waits for the device's signatures. */
   device?: DeviceSigningRequest;
 }

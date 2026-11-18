@@ -105,12 +105,16 @@ function isShown(value: unknown): value is ApprovalShown {
 /**
  * The wallet that must be unlocked: the one a scan attestation was opened
  * for, which stays its signer even if the user switches wallets, or else
- * the active wallet. Unlock opens every wallet that shares the vault
- * password.
+ * the wallet the request signs or sends from, pinned when it was made —
+ * the active wallet can be a different one by the time the window loads.
+ * Unlock opens every wallet that shares the vault password.
  */
 function needsUnlock(state: WalletState, request: ApprovalRequest): boolean {
   const unlocked = state.session?.unlockedWalletIds ?? [];
-  const walletId = request.preview.kind === "scanAttestation" ? request.preview.walletId : state.activeWalletId;
+  const walletId =
+    request.preview.kind === "scanAttestation"
+      ? request.preview.walletId
+      : (request.signingWallet?.id ?? state.activeWalletId);
   if (walletId === null) return unlocked.length === 0;
   return !unlocked.includes(walletId);
 }
@@ -234,7 +238,16 @@ function ApprovalRootContent({
         payload: { requestId: id },
       });
       const walletState = await runtime.send<{ recordActivity: boolean }, WalletState>({ type: "getState", payload: { recordActivity: false } });
-      const wallet = walletState.wallets.find((candidate) => candidate.id === walletState.activeWalletId) ?? null;
+      // The review wallet is the one the request signs or sends from,
+      // pinned when it was made — not the wallet that happens to be active
+      // when the window loads. A wallet-origin transfer survives a switch,
+      // so the active wallet can be a different one from the sender, and
+      // the review would show the wrong wallet as From. Without a pinned
+      // wallet (connect, addToken) the active wallet is the review wallet,
+      // as before; a pinned wallet that no longer exists leaves no From,
+      // and the recipient assessment is skipped with it.
+      const reviewWalletId = request.signingWallet?.id ?? walletState.activeWalletId;
+      const wallet = walletState.wallets.find((candidate) => candidate.id === reviewWalletId) ?? null;
       if (request.device) {
         const device = request.device;
         const signer = walletState.wallets.find((candidate) => candidate.address === device.address) ?? wallet;
@@ -244,7 +257,7 @@ function ApprovalRootContent({
       } else if (needsUnlock(walletState, request)) {
         setState({ kind: "locked", runtime, request });
       } else {
-        const assessment = await assessRecipientFor(runtime, request, walletState.activeWalletId);
+        const assessment = await assessRecipientFor(runtime, request, wallet?.id ?? null);
         setState({ kind: "ready", runtime, request, assessment, wallet });
       }
     } catch (error) {
