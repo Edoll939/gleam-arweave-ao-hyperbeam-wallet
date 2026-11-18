@@ -271,6 +271,20 @@ count as a finding.
   *Still a finding if,* by any path, `privateHash` resolves, or any
   provider method returns a value derived from private key material
   other than a signature or decryption the user approved.
+- **A connection belongs to the site, not to one wallet.** As in Wander,
+  and as the `walletSwitch` event dApps rely on expects, a site's grant
+  follows the active wallet. After the user switches to or imports
+  another wallet, a site with "See your address" reads the new active
+  address and can ask it for signatures, each in its own approval window
+  that names the wallet that signs. `grant.walletId` only records which
+  wallet approved the connection (`GrantedCall` in
+  `packages/runtime/src/handlers/provider.ts`). A user who keeps wallets
+  apart disconnects the site before switching.
+  *Still a finding if,* by any path, a site without "See your address"
+  learns any address; a site with only "See your address" learns the
+  address of a wallet that wasn't active while it was connected, or the
+  list of wallets that "See all your wallets" covers; or an approval names
+  a different wallet from the one that signs.
 - **A connected site can ask whether a token is in the wallet's list.**
   `addToken` and `isTokenAdded` need a connection and no other
   permission, as in Wander. `isTokenAdded` answers one process id at a
