@@ -11,7 +11,18 @@ import { truncateAddress } from "@gleam/ui/src/format/truncate-address.ts";
  * `SendView.tsx`; moved here (rather than duplicated) once Contacts needed
  * the same row.
  */
-export function AddressRow({ address, name, onSelect }: { address: string; name: string | null; onSelect: () => void }) {
+export function AddressRow({
+  address,
+  name,
+  note,
+  onSelect,
+}: {
+  address: string;
+  name: string | null;
+  /** Plain muted text at the row's end. */
+  note?: string;
+  onSelect: () => void;
+}) {
   const t = useT();
   const identity = useAddressIdentity();
   const avatarSvg = identity.avatarSvg(address);
@@ -30,6 +41,7 @@ export function AddressRow({ address, name, onSelect }: { address: string; name:
       ) : (
         <span className="min-w-0 flex-1 truncate font-mono text-label text-foreground">{truncateAddress(address, 6)}</span>
       )}
+      {note ? <span className="flex-shrink-0 text-caption text-muted">{note}</span> : null}
     </button>
   );
 }

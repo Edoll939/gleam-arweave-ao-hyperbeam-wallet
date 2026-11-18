@@ -871,7 +871,7 @@ export function RecipientField({
   emphasisPick: number | null;
   /** A trusted address this one imitates, warned about while still composing. */
   lookalikeOf: string | null;
-  /** Named addresses for the focus dropdown, most recently sent to first (`namedSuggestions`). */
+  /** Named addresses for the focus dropdown: contacts, then your wallets, each most recently sent to first (`namedSuggestions`). */
   suggestions: NamedAddress[];
   onChangeRecipient: (recipient: string) => void;
   onBlurRecipient: () => void;
@@ -998,6 +998,7 @@ export function RecipientField({
                       key={candidate.address}
                       address={candidate.address}
                       name={candidate.name}
+                      note={candidate.own ? t("send.yours") : undefined}
                       onSelect={() => {
                         pickedRef.current = true;
                         onChangeRecipient(candidate.address);
@@ -1526,6 +1527,8 @@ function PickerSection({ label, children }: { label: string; children: ReactNode
 export interface NamedAddress {
   address: string;
   name: string;
+  /** One of your own wallets rather than a contact. */
+  own: boolean;
 }
 
 const SUGGESTION_LIMIT = 4;
@@ -1543,15 +1546,18 @@ export function namedSuggestions(
 ): NamedAddress[] {
   const contactAddresses = new Set(contacts.map((contact) => contact.address));
   const named: NamedAddress[] = [
-    ...contacts.map(({ address, name }) => ({ address, name })),
-    ...otherWallets.filter((candidate) => !contactAddresses.has(candidate.address)).map(({ address, name }) => ({ address, name })),
+    ...contacts.map(({ address, name }) => ({ address, name, own: false })),
+    ...otherWallets
+      .filter((candidate) => !contactAddresses.has(candidate.address))
+      .map(({ address, name }) => ({ address, name, own: true })),
   ];
   const recency = activity ? recentSendRecipients(activity) : [];
   const rank = (address: string) => {
     const index = recency.indexOf(address);
     return index === -1 ? recency.length : index;
   };
-  return named.sort((a, b) => rank(a.address) - rank(b.address));
+  // Your own wallets after contacts, as the full picker groups them
+  return named.sort((a, b) => Number(a.own) - Number(b.own) || rank(a.address) - rank(b.address));
 }
 
 /** Older recipients are a search away; the list itself stays short. */
