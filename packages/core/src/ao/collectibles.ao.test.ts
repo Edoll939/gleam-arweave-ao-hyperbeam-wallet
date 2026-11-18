@@ -165,9 +165,9 @@ describe("discoverCollectibles", () => {
       balances: { [A]: 1, [B]: 1, [C]: 1, [FUNGIBLE]: 1 },
     });
     const byName = Object.fromEntries((await result).map((c) => [c.name, c]));
-    expect(byName.Pic).toMatchObject({ contentType: "image/png", imageUrl: `${GATEWAY}/${A}` });
+    expect(byName.Pic).toMatchObject({ contentType: "image/png", imageUrl: `${GATEWAY}/raw/${A}` });
     expect(byName.Pic).not.toHaveProperty("videoUrl");
-    expect(byName.Clip).toMatchObject({ contentType: "video/mp4", videoUrl: `${GATEWAY}/${FUNGIBLE}` });
+    expect(byName.Clip).toMatchObject({ contentType: "video/mp4", videoUrl: `${GATEWAY}/raw/${FUNGIBLE}` });
     expect(byName.Clip).not.toHaveProperty("imageUrl");
     expect(byName.Song?.contentType).toBe("audio/mpeg");
     expect(byName.Song).not.toHaveProperty("imageUrl");

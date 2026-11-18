@@ -112,7 +112,10 @@ export async function discoverCollectibles(options: DiscoverCollectiblesOptions)
     }
   }
 
-  const gateway = trimTrailingSlashes(gatewayUrl);
+  // `/raw/`: HyperBEAM gateways (arweave.net) answer `/<id>` for an AO
+  // process with a 200 and an empty body. The URL only ever loads through
+  // <img> or <video>, so losing the sandbox subdomain is harmless.
+  const media = `${trimTrailingSlashes(gatewayUrl)}/raw`;
   return held.map((id): Collectible => {
     const t = tagMap(descriptors.get(id) ?? []);
     const ticker = clean(t.ticker, 32) || "ASSET";
@@ -129,8 +132,8 @@ export async function discoverCollectibles(options: DiscoverCollectiblesOptions)
       name: clean(t.name, 128) || clean(t.ticker, 32) || "Unnamed asset",
       ticker,
       ...(contentType ? { contentType } : {}),
-      ...(kind === "image" ? { imageUrl: `${gateway}/${id}` } : {}),
-      ...(kind === "video" ? { videoUrl: `${gateway}/${id}` } : {}),
+      ...(kind === "image" ? { imageUrl: `${media}/${id}` } : {}),
+      ...(kind === "video" ? { videoUrl: `${media}/${id}` } : {}),
       ...(description ? { description } : {}),
       ...(collectionId ? { collectionId, collectionName } : {}),
     };
