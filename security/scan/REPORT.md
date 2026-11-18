@@ -2,8 +2,7 @@
 
 A maintainer reads your report first in a list of many. The title and
 summary tell them in one minute what it is and how bad it is, in plain
-words. Everything else goes in a `<details>` block for the agent that
-triages and fixes it.
+words. The rest is for the agent that triages and fixes it.
 
 ## Advisory title
 
@@ -44,80 +43,74 @@ correct: it shows the maintainer one class of bug, not two.
 
 ## Advisory shape
 
-A maintainer sees only the title and the summary. Everything else goes in
-`<details>`, for the agent that triages and fixes it.
+GitHub only accepts a report in the shape of the repository's report form,
+[`.github/VULNERABILITY_REPORT.yml`](../../.github/VULNERABILITY_REPORT.yml),
+through the API as well as on the site. The draft is that form's sections
+as `### <label>` headings, in the form's order, each with its answer under
+it:
 
 - `Title: <title>` as the first line. Filing sends it as the advisory's
   title and the rest as its description.
-- **Summary**: a short paragraph in plain words. Say what is wrong, who
+- `### Summary`: a short paragraph in plain words. Say what is wrong, who
   it affects, what they lose and how bad it is. Say whether a test shows
   it, a trace shows it or it needs a browser check. If master already
   fixes it, end with `Already fixed on master in <ref>.`
-- `Attestation id: {{ATTESTATION_ID}}`
-- The rating lines (below).
-- A `<details><summary>Details</summary>` block, written for an agent:
-  - **Impact**: who is affected, what they lose, the severity and why;
+- `### Severity`: `Medium`, `High` or `Critical`, what the table in
+  [SECURITY.md § Severity](../../SECURITY.md#severity) gives for your
+  Loss and Requires, never more. The form offers nothing lower: a Low
+  finding isn't filed.
+- `### Attacker`: a row of `docs/THREAT_MODEL.md` § Attackers, word for
+  word.
+- `### Loss`: `key`, `unapproved`, `mismatch`, `control`, `disclosure` or
+  `lockout`.
+- `### Requires`: `none`, `one-click` or `unusual`.
+- `### Fix location`: `<file>#<function>`, the function a fix has to
+  change at the tag, not where the symptom shows. Two reports of one bug
+  usually name the same function, which is how a maintainer groups them.
+- `### Attestation id`: `{{ATTESTATION_ID}}`.
+- `### Failing test`: a ```` ```ts ```` block with a Vitest `it(…)` that
+  fails at the release tag and shows the loss.
+- `### Details`, written for an agent:
+  - **Impact**: who is affected, what they lose, and why the answers
+    above hold;
   - **Steps**: numbered, from the attacker's access to the harm;
   - **Fix** (optional): one line, or the fix and its test as a `diff`
     block against `origin/master`;
   - the six-field table from `VERIFY.md` (Attacker, Entry, Control,
     Boundary, Harm, Evidence);
   - the `file:line` trace;
-  - the failing test, as a ```` ```ts ```` block: a Vitest `it(…)` that
-    fails at the release tag and shows the loss;
   - at most one line on why it isn't a duplicate of a named earlier
     advisory.
 
-## Rating lines
-
-Under the attestation id, one line each. They answer the three questions
-in [SECURITY.md § Severity](../../SECURITY.md#severity), and the
-maintainer answers the same three:
-
-```text
-Severity: medium | high | critical
-Attacker: <a row of docs/THREAT_MODEL.md § Attackers, word for word>
-Loss: key | unapproved | mismatch | control | disclosure | lockout
-Requires: none | one-click | unusual
-Fix location: <file>#<function>
-```
-
-- **Severity** is what the SECURITY.md table gives for your Loss and
-  Requires, never more. If you're unsure between two answers, pick the
-  one your test shows.
-- **Fix location** is the function a fix has to change, not where the
-  symptom shows. Two reports of one bug usually name the same function,
-  which is how a maintainer groups them. Write it as the file at the tag
-  and the function name, or `Class.method`.
-
-A report rated above what its own answers and test show, a repeat of a
-published advisory, and a report that only restates a By design entry
-each lose the scan points of the attestation
-they quote (SCANS.md § Quality rules).
+If you're unsure between two answers, pick the one your test shows. The
+maintainer answers Attacker, Loss and Requires the same way. A report
+rated above what its own answers and test show, a repeat of a published
+advisory, and a report that only restates a By design entry each lose
+the scan points of the attestation they quote (SCANS.md § Quality rules).
 
 ## Style
 
-Above `<details>`:
+In the title and the Summary:
 
 - Write for a person who doesn't read the code. No file, function or
   tag names.
-- Keep to about 100 words, at reading grade 6 to 7.
+- Keep the Summary to about 100 words, at reading grade 6 to 7.
 - Use short sentences, one claim each. Use common words.
 - Use active voice and the present tense.
 - Cut hedges, filler and adjectives. Don't argue that it isn't by design.
 
-Inside `<details>`, be exact and complete. Code names, `file:line` and
-test code belong there.
+In Details and the Failing test, be exact and complete. Code names,
+`file:line` and test code belong there.
 
 `pnpm scan finish` and `pnpm scan file` warn when an `advisory-*.md`
 draft in a round folder has no `Title:` line, a title over 100
-characters or with a check id, code name or parenthetical, more than 120
-words above `<details>`, or a reading grade above 8. The warning never
+characters or with a check id, code name or parenthetical, a Summary of
+more than 120 words, or a reading grade above 8. The warning never
 fails the scan. Fix the draft and move on.
 
 They fail the run, with a `✗` line naming the fix, when an advisory
-draft is missing a rating line or the failing test, rates itself above
-what its Loss and Requires give, rates itself Low, names an attacker the
+draft is missing a section or the failing test, rates itself above what
+its Loss and Requires give, rates itself Low, names an attacker the
 threat model doesn't list, or names a fix location that isn't a function
 at the tag, and when the round folder holds a `pr-*.md` draft.
 
@@ -125,23 +118,50 @@ at the tag, and when the round folder holds a `pr-*.md` draft.
 
 This example is invented. It shows the shape, not a real bug.
 
-```markdown
+````markdown
 Title: A connected site can get a signature on an action the user never sees
 
-**Summary**: The approval window shows only the first 16 tags of a
-request. A site can put an extra tag after them. The user can't see it,
-but Gleam signs it. So a site can slip in an action the user would
-refuse, like a token send. The user approves what looks like a normal
-request, so this is High. A unit test shows it.
+### Summary
 
-Attestation id: {{ATTESTATION_ID}}
-Severity: high
-Attacker: Malicious website
-Loss: mismatch
-Requires: one-click
-Fix location: packages/app/src/approval/TagList.tsx#TagList
+The approval window shows only the first 16 tags of a request. A site
+can put an extra tag after them. The user can't see it, but Gleam signs
+it. So a site can slip in an action the user would refuse, like a token
+send. The user approves what looks like a normal request, so this is
+High. A unit test shows it.
 
-<details><summary>Details</summary>
+### Severity
+
+High
+
+### Attacker
+
+Malicious website
+
+### Loss
+
+mismatch
+
+### Requires
+
+one-click
+
+### Fix location
+
+packages/app/src/approval/TagList.tsx#TagList
+
+### Attestation id
+
+{{ATTESTATION_ID}}
+
+### Failing test
+
+```ts
+it("signs a 17th tag the preview doesn't show", () => {
+  // the test that shows the 17th tag is signed but not shown
+});
+```
+
+### Details
 
 **Impact**: Any user who approves a `signDataItem` request from a hostile
 page. The page gets a signature on a tag the user didn't review, such as
@@ -166,21 +186,13 @@ signed (`mismatch`), and one ordinary approval is enough (`one-click`).
 | Control | The approval preview |
 | Boundary | A signature the user didn't review |
 | Harm | A preview that lies |
-| Evidence | Demonstrated: the test below |
+| Evidence | Demonstrated: the failing test |
 
 Trace: the `file:line` steps from the page call to the preview.
 
-```ts
-it("signs a 17th tag the preview doesn't show", () => {
-  // the test that shows the 17th tag is signed but not shown
-});
-```
-
 Not a duplicate of GHSA-xxxx-xxxx-xxxx, which covered tag values, not
 tag count.
-
-</details>
-```
+````
 
 ## No PRs
 

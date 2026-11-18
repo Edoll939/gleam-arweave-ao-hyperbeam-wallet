@@ -489,11 +489,13 @@ already fixes (Step 6) gets the line `Already fixed on master in <ref>.`
 at the end of its Summary.
 
 Read `security/scan/REPORT.md` before you write the first draft. It gives
-the shape, the style and the rating lines of every advisory.
+the shape and the style of every advisory: the sections of the
+repository's report form, `.github/VULNERABILITY_REPORT.yml`. GitHub
+refuses a report without them.
 
-**Rate it with the rubric, never above it.** Write the `Severity`,
-`Attacker`, `Loss`, `Requires` and `Fix location` lines from the
-verifier's verdict (`REPORT.md` § Rating lines). The severity is what the
+**Rate it with the rubric, never above it.** Answer the `### Severity`,
+`### Attacker`, `### Loss`, `### Requires` and `### Fix location`
+sections from the verifier's verdict (`REPORT.md` § Advisory shape). The severity is what the
 table in `SECURITY.md` § Severity gives for that Loss and Requires. A
 maintainer answers the same three questions, and a report rated above
 what it shows loses the scan points of the attestation it quotes
@@ -508,10 +510,10 @@ it only if they show you evidence that changes an answer.
 
 **Fix location.** The function a fix has to change, as
 `<file>#<function>` at the tag. Name where the fix goes, not where the
-symptom shows: the maintainer groups reports of one bug by this line.
+symptom shows: the maintainer groups reports of one bug by it.
 
-**Failing test.** Put the test from the candidate note in `<details>` as
-a ```` ```ts ```` block. `pnpm scan finish` refuses a draft without one.
+**Failing test.** Put the test from the candidate note under
+`### Failing test` as a ```` ```ts ```` block. `pnpm scan finish` refuses a draft without one.
 
 Draft everything, and file nothing yet. Every advisory quotes the
 round's attestation id, which you get when the user signs. Write
@@ -636,8 +638,8 @@ When every area has a round in this checkout, the message offers only
 Round 5 (Build and release) is ready. Every area of v<release> is done in this checkout. Reply "file" to sign the 5 rounds and file 3 reports.
 ```
 
-A `✗` line naming an `advisory-*.md` is a rating line, fix location or
-test the draft is missing or gets wrong (`REPORT.md` § Rating lines).
+A `✗` line naming an `advisory-*.md` is a section, fix location or test
+the draft is missing or gets wrong (`REPORT.md` § Advisory shape).
 Fix the draft and run `finish` again. A line starting with `!` names a
 draft advisory whose title or summary breaks `REPORT.md`. It never fails
 the run. Fix the draft; you don't need
@@ -733,8 +735,8 @@ request as `Unanswered sign requests so far: <n> (.gleam-scan/declines).`
   unsigned rounds that their `filed.txt` doesn't list yet (File the
   reports). Replace `{{ATTESTATION_ID}}` with the id of any round this
   wallet has signed, from a `signed.json` in `.gleam-scan/`, since any
-  signed id credits the wallet. With none, write `none (not signed)`,
-  so the line reads `Attestation id: none (not signed)`. Then run `pnpm
+  signed id credits the wallet. With none, write `none (not signed)`
+  as the answer under `### Attestation id`. Then run `pnpm
   scan file` and end with its sign request, with one line per filed link
   above it. Its line 2 now offers to add the ids.
 
@@ -771,8 +773,8 @@ again. For each such round:
 4. Each draft that `filed.txt` listed before this step was filed without
    the id (If the user doesn't sign). Unless its line in `filed.txt`
    already ends with `id-added`:
-   - In the draft, replace the line `Attestation id: none (not signed)`
-     with `Attestation id: <id>`.
+   - In the draft, replace `none (not signed)` under `### Attestation id`
+     with the id.
    - Post a comment on the advisory with the line
      `Attestation id: <id>`. If you can't, give the user that line to
      post, above the closing message.
@@ -788,13 +790,15 @@ or with `gh`:
 ```bash
 gh api repos/skyf0xx/gleam-arweave-ao-hyperbeam-wallet/security-advisories/reports \
   -f summary="$(sed -n '1s/^Title: *//p' .gleam-scan/rounds/<area>/advisory-<n>.md)" \
-  -f severity="$(sed -n 's/^Severity: *//p' .gleam-scan/rounds/<area>/advisory-<n>.md | head -1)" \
+  -f severity="$(awk 'f && NF { print tolower($1); exit } /^### Severity/ { f = 1 }' .gleam-scan/rounds/<area>/advisory-<n>.md)" \
   -f description="$(sed 1d .gleam-scan/rounds/<area>/advisory-<n>.md)"
 ```
 
 The title comes from the draft's `Title:` line, and the description is
-everything under it, including the line `Attestation id: <id>` and the
-rating lines. GitHub limits how many reports one account can file in a
+everything under it: every section of the report form, with the
+attestation id in its own. GitHub refuses a description that lacks a
+required section, and its error names what is missing: fix the draft
+from it and file again. GitHub limits how many reports one account can file in a
 day. If it answers that you've reached the limit, file the rest later
 and tell the user which are still to file: waiting costs nothing.
 
@@ -905,8 +909,8 @@ file name to save the draft as.
   attack.
 - Say once whether a finding was demonstrated, traced or needs a browser
   check, then write plainly.
-- Write every advisory as `REPORT.md` says: short on top, rating lines,
-  detail in `<details>`.
+- Write every advisory as `REPORT.md` says: the report form's sections,
+  a plain Summary, and detail under Details.
 - A clean `pass` earns the same as `scanned`. Padding a report with weak
   findings earns nothing.
 

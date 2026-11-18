@@ -20,11 +20,11 @@ Also list `state=draft` for accepted reports that are not yet published.
 
 ## 1. Triage each report
 
-First group the open reports by their `Fix location:` line. Reports that
+First group the open reports by their Fix location section. Reports that
 name one function are often one bug: triage the earliest of the group in
 full, then check each later one against it.
 
-1. **Attestation id.** Look for `Attestation id: <64 hex>` in the
+1. **Attestation id.** Look for the 64-hex id under `### Attestation id`, or an `Attestation id:` line, in the
    description, then in the comments. The id only links the finding to
    a wallet: any non-voided attestation the reporter's wallet signed is
    valid, from any round or release. If there is none, ask once for one
@@ -46,7 +46,7 @@ full, then check each later one against it.
 6. **Rate** with the three questions in `SECURITY.md` § Severity, by
    what was shown, not the worst case. Answer Attacker, Loss and
    Requires yourself, from your reproduction, then read the severity off
-   the table. Don't start from the reporter's rating lines; compare them
+   the table. Don't start from the reporter's answers; compare them
    afterwards. Out of scope: anything that needs a compromised OS,
    malware or the user's password. Missing defence in depth alone is
    `none`, so Low. You are the final arbiter of the rating. Never ask
