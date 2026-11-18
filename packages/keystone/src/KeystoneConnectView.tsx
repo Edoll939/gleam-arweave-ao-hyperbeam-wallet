@@ -2,7 +2,6 @@ import { useState, type ComponentType } from "react";
 import { addressFromOwner, type RuntimePort, type WalletSummary } from "@gleam/core";
 import { Button } from "@gleam/ui/src/primitives/button.tsx";
 import { TextField } from "@gleam/ui/src/primitives/text-field.tsx";
-import { truncateAddress } from "@gleam/ui/src/format/truncate-address.ts";
 import { CameraDeniedNotice, type CameraDeniedHelp } from "./CameraDeniedNotice";
 import { decodeKeystoneAccount, KEYSTONE_ACCOUNT_UR_TYPE, type KeystoneAccount } from "./decode-account";
 import { QrScanner, type QrScannerProps, type ScannerError } from "./QrScanner";
@@ -206,10 +205,8 @@ function ConfirmStep({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <span className="text-caption font-semibold text-muted">{t("extension.address")}</span>
-        <span title={address} className="font-mono text-label text-foreground">
-          {truncateAddress(address)}
-        </span>
+        <p className="text-body leading-relaxed">{t("extension.keystoneCheckAddress")}</p>
+        <span className="break-all font-mono text-label text-foreground">{address}</span>
       </div>
       <TextField
         label={t("extension.name")}
