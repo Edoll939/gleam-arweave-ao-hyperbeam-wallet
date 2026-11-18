@@ -102,6 +102,13 @@ describe("queryTokenMetadata", () => {
     ).rejects.toThrow(/bad query/);
   });
 
+  it("ignores a transaction that isn't the process's own spawn", async () => {
+    const other = { node: { id: "o".repeat(43), tags: [{ name: "Denomination", value: "12" }, { name: "Ticker", value: "wUSDC" }] } };
+    await expect(
+      queryTokenMetadata(PROCESS_ID, "https://arweave.net", fakeGraphQLFetch([other])),
+    ).rejects.toThrow(/No spawn transaction found/);
+  });
+
   it("throws when no transaction is found for the process id (unspawned or unindexed)", async () => {
     const fetchImpl = fakeGraphQLFetch([]);
     await expect(

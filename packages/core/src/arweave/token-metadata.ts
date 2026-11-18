@@ -90,7 +90,9 @@ export async function queryTokenMetadata(
     );
   }
 
-  const edge = body.data?.transactions?.edges[0];
+  // Only the process's own spawn transaction describes it: another
+  // transaction's tags would give it another token's scale and ticker.
+  const edge = body.data?.transactions?.edges.find((candidate) => candidate.node.id === processId);
 
   if (!edge) {
     throw new Error(
