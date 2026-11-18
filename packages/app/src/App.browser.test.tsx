@@ -29,7 +29,7 @@ function setup(dappBrowser: boolean) {
     send: vi.fn(async ({ type }: { type: string }) => {
       if (type === "getState") return state;
       if (type === "getThemePreference") return { theme: "light" };
-      if (type === "listBrowserSites") return { saved: [], recent: [], icons: {} };
+      if (type === "listBrowserSites") return { saved: [], recent: [], icons: {}, history: [] };
       if (type === "getPasskeyStatus") return { enrolled: false };
       if (type === "getBalance") return "0";
       if (type === "getTokenBalances" || type === "getConnectedApps") return [];

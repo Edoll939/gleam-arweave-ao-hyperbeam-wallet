@@ -7,6 +7,7 @@ import type { DappBrowserFrame } from "../../../app-platform/types";
 import { resolveInput, knownSite, BUILT_IN_SITES, pageTrail, siteHost } from "./address";
 import { useT } from "../../../i18n";
 import { StartScreen } from "./StartScreen";
+import { HistoryScreen } from "./HistoryScreen";
 import { useBrowserSites } from "./useBrowserSites";
 
 export interface BrowserViewProps {
@@ -62,6 +63,7 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
   const [page, setPage] = useState<{ url: string; id: number } | null>(initialUrl ? { url: initialUrl, id: 0 } : null);
   const [nav, setNav] = useState<Navigation | null>(null);
   const [editing, setEditing] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [text, setText] = useState("");
   const [rejected, setRejected] = useState(false);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
     opening.current = opening.current.then(run).catch(() => undefined);
   }, []);
 
-  const showingStart = page === null || editing;
+  const showingStart = (page === null || editing) && !historyOpen;
   const currentUrl = nav?.url ?? page?.url ?? null;
   const origin = currentUrl ? originOf(currentUrl) : null;
   const host = currentUrl ? siteHost(currentUrl) : null;
@@ -89,6 +91,7 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
 
   const open = (url: string) => {
     setEditing(false);
+    setHistoryOpen(false);
     setText("");
     setRejected(false);
     setFailedUrl(null);
@@ -128,7 +131,7 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
     };
   }, [page, browser, afterOpen]);
 
-  const covered = page !== null && (editing || failedUrl !== null);
+  const covered = page !== null && (editing || historyOpen || failedUrl !== null);
   useEffect(() => {
     if (page) afterOpen(() => browser.setHidden(covered));
   }, [covered, page, browser, afterOpen]);
@@ -142,12 +145,14 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
       }
       setNav({ url: event.url, canGoBack: event.canGoBack, loading: event.loading });
       clearTimeout(settle);
-      const next = originOf(event.url);
-      if (event.loading || !next || next === recorded.current) return;
+      const title = event.title ?? "";
+      // A title that arrives after the page settled records the page again, which updates its visit.
+      const key = `${event.url}\n${title}`;
+      if (event.loading || !originOf(event.url) || key === recorded.current) return;
       settle = setTimeout(() => {
-        recorded.current = next;
+        recorded.current = key;
         runtime
-          .send({ type: "recordRecentSite", payload: { url: event.url } })
+          .send({ type: "recordRecentSite", payload: title ? { url: event.url, title } : { url: event.url } })
           .then(() => sites.reload())
           .catch(() => undefined);
       }, RECENT_SETTLE_MS);
@@ -219,7 +224,8 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
   };
 
   useBackHandler(() => {
-    if (page && editing) cancelEditing();
+    if (historyOpen) setHistoryOpen(false);
+    else if (page && editing) cancelEditing();
     else if (page && nav?.canGoBack) goBackInPage();
     else if (page) closePage();
     else onBack();
@@ -267,8 +273,16 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
   return (
     <div className="flex h-[calc(100dvh-var(--safe-top)-var(--safe-bottom))] flex-col overflow-hidden">
       <div className="flex items-center gap-1 px-2 pb-2 pt-1">
-        {page === null ? <IconButton label={t("browser.back")} onClick={onBack}><BackIcon /></IconButton> : null}
-        {showingStart ? (
+        {historyOpen ? (
+          <>
+            <IconButton label={t("browser.back")} onClick={() => setHistoryOpen(false)}><BackIcon /></IconButton>
+            <h1 className="min-w-0 flex-1 truncate text-center text-body font-semibold text-foreground">{t("browser.history")}</h1>
+            <div aria-hidden="true" className="w-11 flex-shrink-0" />
+          </>
+        ) : page === null ? (
+          <IconButton label={t("browser.back")} onClick={onBack}><BackIcon /></IconButton>
+        ) : null}
+        {historyOpen ? null : showingStart ? (
           <form onSubmit={submit} className="flex min-w-0 flex-1 items-center gap-1">
             <input
               type="text"
@@ -321,7 +335,7 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
           {t("browser.enterAddress")}
         </p>
       ) : null}
-      {page && nav?.loading && !showingStart ? <Beam /> : <div className="h-[3px]" />}
+      {page && nav?.loading && !showingStart && !historyOpen ? <Beam /> : <div className="h-[3px]" />}
 
       <div className="relative min-h-0 flex-1">
         {page ? <div ref={placeholder} data-testid="page-placeholder" className="absolute inset-0 bg-mist" /> : null}
@@ -331,15 +345,22 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
               query={text}
               saved={sites.saved}
               recent={sites.recent}
+              history={sites.history}
               icons={sites.icons}
               onOpen={open}
               onRemoveSaved={removeSaved}
               onClearSiteData={platform.capabilities.dappBrowser ? () => browser.clearSiteData() : undefined}
               onClearRecent={platform.capabilities.dappBrowser ? clearRecent : undefined}
+              onOpenHistory={() => setHistoryOpen(true)}
             />
           </div>
         ) : null}
-        {failedUrl !== null && !showingStart ? (
+        {historyOpen ? (
+          <div className="absolute inset-0 overflow-y-auto bg-background">
+            <HistoryScreen history={sites.history} onOpen={open} />
+          </div>
+        ) : null}
+        {failedUrl !== null && !showingStart && !historyOpen ? (
           <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-background px-8 text-center">
             <p className="text-body text-foreground">
               {t("browser.loadFailed", { host: siteHost(failedUrl)?.host ?? t("browser.thisPage") })}

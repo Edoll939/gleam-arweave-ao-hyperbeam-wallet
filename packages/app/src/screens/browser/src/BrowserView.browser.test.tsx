@@ -43,11 +43,16 @@ function fakeBrowser() {
 }
 
 function fakeRuntime(
-  sites: { saved: string[]; recent: string[]; icons?: Record<string, string> } = { saved: [], recent: [] },
+  sites: {
+    saved: string[];
+    recent: string[];
+    icons?: Record<string, string>;
+    history?: { url: string; title: string; at: number }[];
+  } = { saved: [], recent: [] },
   grants: unknown[] = [],
 ) {
   const send = vi.fn(async ({ type }: { type: string }) => {
-    if (type === "listBrowserSites") return { icons: {}, ...sites };
+    if (type === "listBrowserSites") return { icons: {}, history: [], ...sites };
     if (type === "getConnectedApps") return grants;
     return undefined;
   });
@@ -76,7 +81,7 @@ describe("BrowserView start screen", () => {
     mount({ browser: browser.port, runtime });
 
     await screen.findByText("recent.example");
-    fireEvent.click(screen.getByRole("button", { name: "Clear recent sites" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear history" }));
     await waitFor(() => expect(send).toHaveBeenCalledWith({ type: "clearRecentSites", payload: undefined }));
 
     fireEvent.click(screen.getByText("Clear site data"));
@@ -193,6 +198,72 @@ describe("BrowserView start screen", () => {
     fireEvent.change(await screen.findByLabelText("Address"), { target: { value: "ao.arweave" } });
     fireEvent.click(screen.getByText("ao.arweave.net"));
     expect(browser.port.open).toHaveBeenCalledWith(expect.objectContaining({ url: "https://ao.arweave.net/" }));
+  });
+});
+
+describe("BrowserView history", () => {
+  it("shows where the user last was on a recent site", async () => {
+    const { runtime } = fakeRuntime({
+      saved: [],
+      recent: ["https://recent.example"],
+      history: [{ url: "https://recent.example/pomp/claim/72mVqAhoivaMzHOEVNRo6Kisy8avXCsjJJpitpM5mVQ", title: "Claim", at: Date.now() }],
+    });
+    mount({ runtime });
+    expect(await screen.findByText(/^pomp › claim › … · /)).toBeTruthy();
+  });
+
+  it("opens from the start screen, lists pages by title under their host, and opens one", async () => {
+    const browser = fakeBrowser();
+    const now = Date.now();
+    const { runtime } = fakeRuntime({
+      saved: [],
+      recent: ["https://a.example"],
+      history: [
+        { url: "https://a.example/two", title: "Two", at: now },
+        { url: "https://a.example/one", title: "One", at: now - 1_000 },
+        { url: "https://b.example/pools", title: "Pools", at: now - 2_000 },
+      ],
+    });
+    mount({ browser: browser.port, runtime });
+
+    fireEvent.click(await screen.findByRole("button", { name: "History" }));
+    expect(screen.getByRole("heading", { name: "History" })).toBeTruthy();
+    // Two pages on a.example in a row fold into one row.
+    const folded = screen.getByRole("button", { name: /a\.example/ });
+    expect(folded.getAttribute("aria-expanded")).toBe("false");
+    expect(within(folded).getByText("2 pages")).toBeTruthy();
+    expect(screen.getByText("b.example")).toBeTruthy();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search history" }), { target: { value: "nothing" } });
+    expect(screen.getByText("No matching pages.")).toBeTruthy();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search history" }), { target: { value: "" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /a\.example/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^One/ }));
+    expect(browser.port.open).toHaveBeenCalledWith(expect.objectContaining({ url: "https://a.example/one" }));
+    expect(screen.queryByRole("heading", { name: "History" })).toBeNull();
+  });
+
+  it("closes history on the system back press", async () => {
+    const { runtime } = fakeRuntime({ saved: [], recent: ["https://a.example"] });
+    const { stack, onBack } = mount({ runtime });
+    fireEvent.click(await screen.findByRole("button", { name: "History" }));
+    act(() => {
+      expect(stack.handle()).toBe(true);
+    });
+    expect(screen.queryByRole("heading", { name: "History" })).toBeNull();
+    expect(onBack).not.toHaveBeenCalled();
+  });
+
+  it("records the page's title with the visit", async () => {
+    const browser = fakeBrowser();
+    const { runtime, send } = fakeRuntime();
+    mount({ browser: browser.port, runtime, initialUrl: "https://a.example/" });
+    await browser.emit({ kind: "navigation", url: "https://a.example/page", canGoBack: false, loading: false, title: "A page" });
+    await waitFor(
+      () => expect(send).toHaveBeenCalledWith({ type: "recordRecentSite", payload: { url: "https://a.example/page", title: "A page" } }),
+      { timeout: 3_000 },
+    );
   });
 });
 
