@@ -13,6 +13,7 @@ describe("checkWellKnown", () => {
     const seen: [string, RequestInit | undefined][] = [];
     const problems = await checkWellKnown({
       host: "example.test",
+      readRepoFile: async () => "{}",
       fetchImpl: stub((url, init) => {
         seen.push([url, init]);
         return json("{}");
@@ -48,5 +49,27 @@ describe("checkWellKnown", () => {
     });
     expect(problems).toHaveLength(2);
     expect(problems[0]).toMatch(/ENOTFOUND/);
+  });
+
+  it("reports valid JSON that differs from the repo copy, and accepts reordered keys", async () => {
+    const problems = await checkWellKnown({
+      readRepoFile: async (file) => (file === "assetlinks.json" ? '{"a":1,"b":2}' : "{}"),
+      fetchImpl: stub((url) =>
+        url.endsWith("assetlinks.json") ? json('{"b":2,"a":1}') : json('{"other":true}'),
+      ),
+    });
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/apple-app-site-association.*differs from the repo copy/);
+  });
+
+  it("treats an unreadable repo copy as a problem", async () => {
+    const problems = await checkWellKnown({
+      readRepoFile: async () => {
+        throw new Error("ENOENT");
+      },
+      fetchImpl: stub(() => json("{}")),
+    });
+    expect(problems).toHaveLength(2);
+    expect(problems[0]).toMatch(/cannot read the repo copy/);
   });
 });
