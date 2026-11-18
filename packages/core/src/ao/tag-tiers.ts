@@ -35,7 +35,7 @@ export type AppTag = Tag & { unusual?: { expected: string } };
  * tags and protocol tags, each in signing order.
  */
 export interface TagTiers {
-  /** `Action` (with `Quantity` beside it), or else a `Type` other than `Message`. A duplicated `Action` or `Quantity` never headlines: every copy is an app tag. */
+  /** `Action` (with `Quantity` beside it), or else a `Type` other than `Message`. A duplicated `Action`, `Quantity` or `Type` never headlines: every copy is an app tag. */
   headline: { tag: Tag; quantity: Tag | null } | null;
   /** Tags whose value is an Arweave or EVM address. */
   addresses: Tag[];
@@ -66,17 +66,20 @@ function isAddress(value: string): boolean {
  * Sorts tags into the approval screen's tiers. The first `Action` heads the
  * item and any other stays an app tag. A name given twice, in any case, has
  * no single reading — a process could act on either copy — so a duplicated
- * `Action` heads nothing (not even a `Type` fallback) and a duplicated
- * `Quantity` never sits beside the headline: every copy stays an app tag,
- * where the reader can see all of them. A protocol tag name with an
- * unexpected value is never shown among the protocol tags: it is lifted
- * into App tags and marked.
+ * `Action` heads nothing (not even a `Type` fallback), a duplicated
+ * `Quantity` never sits beside the headline, and a duplicated `Type` never
+ * heads the item either: every copy stays an app tag, where the reader can
+ * see all of them. A `Type` of `Message` does not count toward the
+ * duplication: it is the expected value, not a fallback candidate. A
+ * protocol tag name with an unexpected value is never shown among the
+ * protocol tags: it is lifted into App tags and marked.
  */
 export function tierTags(tags: readonly Tag[]): TagTiers {
   const count = (name: string) => tags.filter((tag) => tag.name.toLowerCase() === name).length;
   const ambiguousAction = count("action") > 1;
   const action = ambiguousAction ? null : byName(tags, "Action");
-  const type = action === null && !ambiguousAction ? byName(tags, "Type", (tag) => tag.value !== "Message") : null;
+  const ambiguousType = tags.filter((tag) => tag.name.toLowerCase() === "type" && tag.value !== "Message").length > 1;
+  const type = action === null && !ambiguousAction && !ambiguousType ? byName(tags, "Type", (tag) => tag.value !== "Message") : null;
   const quantity = action !== null && count("quantity") === 1 ? byName(tags, "Quantity") : null;
   const headlineTag = action ?? type;
 

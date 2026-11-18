@@ -48,6 +48,27 @@ describe("tierTags", () => {
     expect(tiers.addresses).toEqual([tag("Recipient", WALLET)]);
   });
 
+  it("does not headline a Type given twice, in any case, when the copies conflict", () => {
+    const tiers = tierTags([tag("Type", "Process"), tag("type", "Other")]);
+    expect(tiers.headline).toBeNull();
+    expect(tiers.app).toEqual([
+      { ...tag("Type", "Process"), unusual: { expected: "Message" } },
+      { ...tag("type", "Other"), unusual: { expected: "Message" } },
+    ]);
+  });
+
+  it("does not headline a Type given twice even when the copies agree", () => {
+    const tiers = tierTags([tag("Type", "Process"), tag("type", "Process")]);
+    expect(tiers.headline).toBeNull();
+    expect(tiers.app).toHaveLength(2);
+  });
+
+  it("still heads a message by its Type when the other Type copy is Message", () => {
+    const tiers = tierTags([tag("Type", "Message"), tag("Type", "Process")]);
+    expect(tiers.headline).toEqual({ tag: tag("Type", "Process"), quantity: null });
+    expect(tiers.protocol).toEqual([tag("Type", "Message")]);
+  });
+
   it("lifts a protocol tag with an unexpected value into app tags, marked", () => {
     const tiers = tierTags([tag("Action", "Vote"), tag("Variant", "ao.TN.2"), tag("Type", "Process"), tag("data-protocol", "x")]);
     expect(tiers.protocol).toEqual([]);
@@ -85,6 +106,14 @@ describe("tierTags", () => {
     const tiers = tierTags(tags);
     const placed = [tiers.headline?.tag, tiers.headline?.quantity, ...tiers.addresses, ...tiers.app, ...tiers.protocol].filter(Boolean);
     expect(placed).toHaveLength(tags.length);
+  });
+
+  it("places every tag exactly once when the Type headline is suppressed", () => {
+    const tags = [tag("Type", "Process"), tag("type", "Other"), tag("Note", "hi")];
+    const tiers = tierTags(tags);
+    const placed = [tiers.headline?.tag, tiers.headline?.quantity, ...tiers.addresses, ...tiers.app, ...tiers.protocol].filter(Boolean);
+    expect(placed).toHaveLength(tags.length);
+    expect(tiers.headline).toBeNull();
   });
 
   it("never headlines a Quantity name carrying hidden characters", () => {
