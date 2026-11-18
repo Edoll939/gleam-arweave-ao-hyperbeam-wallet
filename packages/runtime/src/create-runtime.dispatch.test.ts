@@ -230,6 +230,19 @@ describe("createRuntime", () => {
       expect(preview.unreadableTokenTransfer).toBeUndefined();
     });
 
+    it("a dApp's L1 token transfer that carries the activation winston shows as the token transfer, the winston in the fee", async () => {
+      const token = "t".repeat(43);
+      const recipient = "r".repeat(43);
+      const preview = await previewOfSign({
+        target: token,
+        quantity: "1",
+        reward: "999",
+        tags: [tag("action", "transfer"), tag("recipient", recipient), tag("quantity", "5000000")],
+      });
+      expect(preview).toMatchObject({ recipient, amount: "5000000", token, fee: "1000" });
+      expect(preview.unreadableTokenTransfer).toBeUndefined();
+    });
+
     it("a dApp's transfer-looking transaction it can't read shows as the plain transaction, flagged", async () => {
       const token = "t".repeat(43);
       const recipient = "r".repeat(43);
