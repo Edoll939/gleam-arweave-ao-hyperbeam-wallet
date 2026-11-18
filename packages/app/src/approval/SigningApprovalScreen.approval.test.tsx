@@ -213,6 +213,17 @@ describe("SigningApprovalScreen transfer layout: AR", () => {
     expect(screen.queryByText(/≈/)).toBeNull();
   });
 
+  it("shows the data an AR transfer carries beside the amount, without opening Details", () => {
+    renderScreen({ preview: { ...AR_PREVIEW, decodedData: "hello", dataSize: 2048 } });
+    expect(screen.getByText("Data")).toBeTruthy();
+    expect(screen.getByText("2048 bytes")).toBeTruthy();
+  });
+
+  it("shows no data row for an AR transfer without data", () => {
+    renderScreen({ preview: { ...AR_PREVIEW, dataSize: 0 } });
+    expect(screen.queryByText("Data")).toBeNull();
+  });
+
   it("names the method in Details", () => {
     renderScreen({ preview: AR_PREVIEW });
     openDetails();
