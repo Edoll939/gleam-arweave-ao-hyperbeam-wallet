@@ -2,10 +2,15 @@ import { describe, expect, it } from "vitest";
 import type { StoragePort } from "@gleam/core";
 import {
   BrowserSitesHandler,
+  BROWSER_HISTORY_KEY,
   BROWSER_RECENT_SITES_KEY,
   BROWSER_SITE_ICONS_KEY,
+  MAX_HISTORY,
+  MAX_HISTORY_URL_LENGTH,
   MAX_RECENT_SITES,
   MAX_SITE_ICON_LENGTH,
+  MAX_TITLE_LENGTH,
+  isValidBrowserVisit,
   isValidSiteIcon,
 } from "./browser-sites";
 
@@ -44,7 +49,7 @@ describe("BrowserSitesHandler", () => {
   });
 
   it("starts empty", async () => {
-    expect(await new BrowserSitesHandler(createFakeStorage()).listBrowserSites()).toEqual({ saved: [], recent: [], icons: {} });
+    expect(await new BrowserSitesHandler(createFakeStorage()).listBrowserSites()).toEqual({ saved: [], recent: [], icons: {}, history: [] });
   });
 
   it("saves the origin of a page, newest first, without duplicates", async () => {
@@ -66,7 +71,7 @@ describe("BrowserSitesHandler", () => {
     const handler = new BrowserSitesHandler(createFakeStorage());
     await expect(handler.saveBrowserSite({ url: "javascript:alert(1)" })).rejects.toThrow();
     await expect(handler.recordRecentSite({ url: "not a url" })).rejects.toThrow();
-    expect(await handler.listBrowserSites()).toEqual({ saved: [], recent: [], icons: {} });
+    expect(await handler.listBrowserSites()).toEqual({ saved: [], recent: [], icons: {}, history: [] });
   });
 
   it("keeps ten recent origins, most recent first, one per origin", async () => {
@@ -81,14 +86,59 @@ describe("BrowserSitesHandler", () => {
     expect(recent.filter((origin) => origin === "https://site5.example")).toHaveLength(1);
   });
 
-  it("clears only the recent list", async () => {
+  it("clears the recent sites and history, and nothing saved", async () => {
     const storage = createFakeStorage();
     const handler = new BrowserSitesHandler(storage);
     await handler.saveBrowserSite({ url: "https://a.example/" });
     await handler.recordRecentSite({ url: "https://b.example/" });
     await handler.clearRecentSites();
-    expect(await handler.listBrowserSites()).toEqual({ saved: ["https://a.example"], recent: [], icons: {} });
+    expect(await handler.listBrowserSites()).toEqual({ saved: ["https://a.example"], recent: [], icons: {}, history: [] });
     expect(await storage.get(BROWSER_RECENT_SITES_KEY)).toBeNull();
+    expect(await storage.get(BROWSER_HISTORY_KEY)).toBeNull();
+  });
+
+  it("records each page in history, newest first, folding a repeat of the newest into it", async () => {
+    let now = 1_000;
+    const handler = new BrowserSitesHandler(createFakeStorage(), () => now);
+    await handler.recordRecentSite({ url: "https://a.example/one", title: "One" });
+    now = 2_000;
+    await handler.recordRecentSite({ url: "https://a.example/two" });
+    now = 3_000;
+    await handler.recordRecentSite({ url: "https://a.example/two", title: "Two" });
+    now = 4_000;
+    await handler.recordRecentSite({ url: "https://a.example/two" });
+    expect((await handler.listBrowserSites()).history).toEqual([
+      { url: "https://a.example/two", title: "Two", at: 4_000 },
+      { url: "https://a.example/one", title: "One", at: 1_000 },
+    ]);
+  });
+
+  it("cleans the page's title and drops one that is only a URL", async () => {
+    const handler = new BrowserSitesHandler(createFakeStorage());
+    await handler.recordRecentSite({ url: "https://a.example/", title: "  Claim\u202e  your\n POMP " });
+    await handler.recordRecentSite({ url: "https://b.example/", title: "https://b.example/" });
+    await handler.recordRecentSite({ url: "https://c.example/", title: "x".repeat(MAX_TITLE_LENGTH + 50) });
+    const titles = (await handler.listBrowserSites()).history.map((visit) => visit.title);
+    expect(titles).toEqual(["x".repeat(MAX_TITLE_LENGTH), "", "Claim your POMP"]);
+  });
+
+  it("keeps at most MAX_HISTORY visits and skips a very long URL", async () => {
+    const handler = new BrowserSitesHandler(createFakeStorage());
+    for (let index = 0; index < MAX_HISTORY + 5; index += 1) {
+      await handler.recordRecentSite({ url: `https://a.example/${index}` });
+    }
+    await handler.recordRecentSite({ url: `https://a.example/?q=${"a".repeat(MAX_HISTORY_URL_LENGTH)}` });
+    const { history, recent } = await handler.listBrowserSites();
+    expect(history).toHaveLength(MAX_HISTORY);
+    expect(history[0]?.url).toBe(`https://a.example/${MAX_HISTORY + 4}`);
+    expect(recent).toEqual(["https://a.example"]);
+  });
+
+  it("skips stored visits that fail the guard", async () => {
+    const storage = createFakeStorage();
+    await storage.set(BROWSER_HISTORY_KEY, [{ url: "https://a.example/", title: "", at: 1 }, { url: 7 }, null, { url: "https://b.example/", title: "", at: "x" }]);
+    expect((await new BrowserSitesHandler(storage).listBrowserSites()).history).toEqual([{ url: "https://a.example/", title: "", at: 1 }]);
+    expect(isValidBrowserVisit({ url: "https://a.example/", title: "", at: Number.NaN })).toBe(false);
   });
 
   it("keeps a saved site's icon by origin, and drops it with the site", async () => {
@@ -108,7 +158,7 @@ describe("BrowserSitesHandler", () => {
     for (const icon of ["https://a.example/favicon.ico", "data:text/html;base64,PGI+", `data:image/png;base64,${"A".repeat(MAX_SITE_ICON_LENGTH)}`]) {
       await handler.saveBrowserSite({ url: "https://a.example/", icon });
     }
-    expect(await handler.listBrowserSites()).toEqual({ saved: ["https://a.example"], recent: [], icons: {} });
+    expect(await handler.listBrowserSites()).toEqual({ saved: ["https://a.example"], recent: [], icons: {}, history: [] });
   });
 
   it("lists icons only for sites still saved, and skips stored values that fail the guard", async () => {

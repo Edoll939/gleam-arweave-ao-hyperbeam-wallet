@@ -216,8 +216,13 @@ export interface ProtocolMap {
   getSecurityPhrase(): SecurityPhrase | null;
   /** One list for the whole vault, most-recently-saved first. */
   listContacts(): Contact[];
-  /** The dApp browser's saved and recent sites, as origins, most recent first. */
-  listBrowserSites(): { saved: string[]; recent: string[]; icons: Record<string, string> };
+  /** The dApp browser's saved and recent sites, as origins, and its page history, all most recent first. */
+  listBrowserSites(): {
+    saved: string[];
+    recent: string[];
+    icons: Record<string, string>;
+    history: { url: string; title: string; at: number }[];
+  };
 
   // actions
   // `TransferDraft` carries `walletId` directly — signing
@@ -292,8 +297,9 @@ export interface ProtocolMap {
   /** Saves the origin of an http(s) `url`; saving it again moves it to the top. */
   saveBrowserSite(req: { url: string; icon?: string }): void;
   removeBrowserSite(req: { origin: string }): void;
-  /** Keeps the 10 most recent origins, one entry per origin. */
-  recordRecentSite(req: { url: string }): void;
+  /** Keeps the 10 most recent origins, one entry per origin, and the page in history. */
+  recordRecentSite(req: { url: string; title?: string }): void;
+  /** Clears the recent sites and the page history. */
   clearRecentSites(): void;
 
   /**
