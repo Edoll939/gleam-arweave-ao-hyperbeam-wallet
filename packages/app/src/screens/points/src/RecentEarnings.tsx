@@ -9,6 +9,13 @@ function pullRequestNumber(ref: string | null): string | null {
   return ref?.match(/\/pull\/(\d+)/)?.[1] ?? null;
 }
 
+/** `scan-award` records each bonus under its finding's ref with a `#fix` or `#best` hash. */
+function findingTitle(ref: string | null): "points.sourceFinding" | "points.sourceFixBonus" | "points.sourceBestFinding" {
+  if (ref?.endsWith("#best")) return "points.sourceBestFinding";
+  if (ref?.endsWith("#fix")) return "points.sourceFixBonus";
+  return "points.sourceFinding";
+}
+
 /**
  * Today's and yesterday's credits, folded to their sum; opened, each day
  * by source. Renders nothing when neither day has a credit.
@@ -47,7 +54,7 @@ export function RecentEarnings({
         return { title: t("points.sourceScan"), detail: `v${row.release}` };
       case "finding": {
         const pr = pullRequestNumber(row.ref);
-        return { title: t("points.sourceFinding"), detail: pr ? `${t("points.sourcePr", { number: pr })} · v${row.release}` : `v${row.release}` };
+        return { title: t(findingTitle(row.ref)), detail: pr ? `${t("points.sourcePr", { number: pr })} · v${row.release}` : `v${row.release}` };
       }
       case "friendJoined":
         return { title: t("points.sourceFriendJoined"), detail: t("points.sourceFriendJoinedDetail", { percent: referralPercent }) };
