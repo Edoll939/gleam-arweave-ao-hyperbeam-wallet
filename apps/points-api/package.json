@@ -9,7 +9,8 @@
     "funnel": "tsx scripts/funnel.ts",
     "scan-award": "tsx scripts/scan-award.ts",
     "scan-backfill": "tsx scripts/scan-backfill.ts",
-    "scan-void": "tsx scripts/scan-void.ts"
+    "scan-void": "tsx scripts/scan-void.ts",
+    "scan-dock": "tsx scripts/scan-dock.ts"
   },
   "dependencies": {
     "@gleam/core": "workspace:*",

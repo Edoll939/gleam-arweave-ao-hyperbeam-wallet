@@ -2,7 +2,9 @@
 import { describe, expect, it } from "vitest";
 import {
   awardFinding,
+  dockAttestation,
   formatPoints,
+  parseDockArgs,
   parseAwardArgs,
   parseVoidArgs,
   voidAttestation,
@@ -55,14 +57,22 @@ describe("parse args", () => {
     expect(parseAwardArgs(["--attestation", ID, "--severity", "high", "--ref", REF, "--yes"])).toEqual({ attestation: ID, severity: "high", ref: REF, yes: true });
     expect(() => parseAwardArgs(["--severity", "high", "--ref", REF])).toThrow(/--attestation/);
     expect(() => parseAwardArgs(["--attestation", ID, "--severity", "huge", "--ref", REF])).toThrow(/--severity must be one of/);
-    expect(() => parseAwardArgs(["--attestation", ID, "--severity", "low", "--ref", "nope"])).toThrow(/--ref/);
+    expect(() => parseAwardArgs(["--attestation", ID, "--severity", "low", "--ref", REF])).toThrow(/--severity must be one of/);
+    expect(() => parseAwardArgs(["--attestation", ID, "--severity", "medium", "--ref", "nope"])).toThrow(/--ref/);
     expect(parseAwardArgs(["--attestation", ID, "--severity", "fix", "--ref", REF]).ref).toBe(`${REF}#fix`);
-    expect(() => parseAwardArgs(["--attestation", ID, "--severity", "low", "--ref", "http://x.io/1"])).toThrow(/https/);
+    expect(parseAwardArgs(["--attestation", ID, "--severity", "best", "--ref", REF]).ref).toBe(`${REF}#best`);
+    expect(() => parseAwardArgs(["--attestation", ID, "--severity", "medium", "--ref", "http://x.io/1"])).toThrow(/https/);
   });
 
   it("parses void args", () => {
     expect(parseVoidArgs(["--attestation", ID])).toEqual({ attestation: ID, yes: false });
     expect(() => parseVoidArgs([])).toThrow(/--attestation/);
+  });
+
+  it("parses dock args", () => {
+    expect(parseDockArgs(["--attestation", ID, "--ref", REF])).toEqual({ attestation: ID, ref: REF, yes: false });
+    expect(() => parseDockArgs(["--attestation", ID])).toThrow(/--ref/);
+    expect(() => parseDockArgs(["--ref", REF])).toThrow(/--attestation/);
   });
 });
 
@@ -71,8 +81,8 @@ describe("awardFinding", () => {
     ["critical", "500"],
     ["high", "250"],
     ["medium", "100"],
-    ["low", "20"],
     ["fix", "10"],
+    ["best", "50"],
   ] as const)("pays the %s share of the pool", async (severity, amount) => {
     const db = await createTestDb();
     await seed(db);
@@ -120,9 +130,9 @@ describe("awardFinding", () => {
     await seed(db);
     await fund(db, "1000");
     const asked: string[] = [];
-    await awardFinding(db, { attestation: ID, severity: "low", ref: REF, yes: true }, async (q) => (asked.push(q), false), () => {});
+    await awardFinding(db, { attestation: ID, severity: "medium", ref: REF, yes: true }, async (q) => (asked.push(q), false), () => {});
     expect(asked).toEqual([]);
-    expect(await balance(db)).toBe("980");
+    expect(await balance(db)).toBe("900");
   });
 
   it("refuses a ref it already paid, even for another attestation", async () => {
@@ -149,16 +159,16 @@ describe("awardFinding", () => {
   it("refuses an unknown, voided or departed attestation and an empty pool", async () => {
     const db = await createTestDb();
     await seed(db);
-    await expect(run(db, "low")).rejects.toThrow(/pool is empty/);
+    await expect(run(db, "medium")).rejects.toThrow(/pool is empty/);
     await fund(db, "1000");
-    await expect(run(db, "low", yes, REF, "c".repeat(64))).rejects.toThrow(/No attestation/);
+    await expect(run(db, "medium", yes, REF, "c".repeat(64))).rejects.toThrow(/No attestation/);
 
     await db.query("UPDATE attestations SET voided_at = now()");
-    await expect(run(db, "low")).rejects.toThrow(/voided/);
+    await expect(run(db, "medium")).rejects.toThrow(/voided/);
     await db.query("UPDATE attestations SET voided_at = NULL");
 
     await db.query("DELETE FROM wallets WHERE address = 'alice'");
-    await expect(run(db, "low")).rejects.toThrow(/has left/);
+    await expect(run(db, "medium")).rejects.toThrow(/has left/);
     expect(await balance(db)).toBe("1000");
   });
 
@@ -203,5 +213,48 @@ describe("voidAttestation", () => {
 
     await voidAttestation(db, { attestation: ID, yes: true }, no, () => {});
     await expect(voidAttestation(db, { attestation: ID, yes: true }, no, () => {})).rejects.toThrow(/already voided/);
+  });
+});
+
+describe("dockAttestation", () => {
+  const REF2 = "https://github.com/x/y/security/advisories/GHSA-2";
+  async function scanned(db: Db) {
+    await seed(db);
+    await db.query("INSERT INTO scan_points (address, attestation_id, kind, amount_atomic, created_at) VALUES ('alice', $1, 'scan', 7, now())", [ID]);
+  }
+  const total = async (db: Db) =>
+    (await db.query<{ t: string }>("SELECT coalesce(sum(amount_atomic), 0)::text AS t FROM scan_points WHERE address = 'alice'")).rows[0]!.t;
+
+  it("takes back the scan points and keeps the scan counted", async () => {
+    const db = await createTestDb();
+    await scanned(db);
+    await db.query("INSERT INTO scan_points (address, attestation_id, kind, amount_atomic, ref, created_at) VALUES ('alice', $1, 'finding', 500, $2, now())", [ID, REF]);
+
+    const result = await dockAttestation(db, { attestation: ID, ref: REF2, yes: false }, yes, () => {});
+
+    expect(result).toEqual({ docked: true, removed: 7n });
+    expect(await total(db)).toBe("500");
+    const paidTaken = await db.query("SELECT 1 FROM attestations WHERE paid AND voided_at IS NULL");
+    expect(paidTaken.rows).toHaveLength(1);
+  });
+
+  it("writes nothing when declined, and refuses a second dock or a used ref", async () => {
+    const db = await createTestDb();
+    await scanned(db);
+    expect((await dockAttestation(db, { attestation: ID, ref: REF2, yes: false }, no, () => {})).docked).toBe(false);
+    expect(await total(db)).toBe("7");
+
+    await dockAttestation(db, { attestation: ID, ref: REF2, yes: true }, no, () => {});
+    await expect(dockAttestation(db, { attestation: ID, ref: `${REF2}0`, yes: true }, no, () => {})).rejects.toThrow(/no scan points left/);
+    await expect(dockAttestation(db, { attestation: ID, ref: REF2, yes: true }, no, () => {})).rejects.toThrow(/already been paid or docked/);
+  });
+
+  it("leaves nothing negative when a docked attestation is voided", async () => {
+    const db = await createTestDb();
+    await scanned(db);
+    await dockAttestation(db, { attestation: ID, ref: REF2, yes: true }, no, () => {});
+    const result = await voidAttestation(db, { attestation: ID, yes: true }, no, () => {});
+    expect(result.removed).toBe(0n);
+    expect(await total(db)).toBe("0");
   });
 });
