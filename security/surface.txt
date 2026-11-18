@@ -205,6 +205,9 @@
 5 apps/mobile/android/settings.gradle
 5 apps/mobile/android/gradle.properties
 5 apps/mobile/android/gradle/wrapper/gradle-wrapper.properties
+5 apps/mobile/android/gradle/wrapper/gradle-wrapper.jar
+5 apps/mobile/android/gradlew
+5 apps/mobile/android/gradlew.bat
 5 apps/mobile/android/app/capacitor.build.gradle
 5 apps/mobile/plugins/dapp-view/android/build.gradle
 5 apps/site-open/.well-known/apple-app-site-association
