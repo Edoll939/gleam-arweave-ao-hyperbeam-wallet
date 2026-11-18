@@ -38,6 +38,8 @@ export interface TransferLine {
    * Details, so a tag the reader doesn't model is seen before approving.
    */
   otherTags?: number;
+  /** The token's ticker or name copies a registered token's, so the screen warns and shows the full process id. */
+  impersonating?: true;
 }
 
 /** What one signed thing says beyond the transfer itself, shown under Details. */
@@ -141,7 +143,7 @@ export function transferRequestFromPreview(preview: SigningApprovalPreview): Tra
         payloadHash: item.payloadHash,
       };
       if (item.transfer) {
-        const { token, tokenTicker, tokenDenomination, amount, recipient, collectible } = item.transfer;
+        const { token, tokenTicker, tokenDenomination, amount, recipient, collectible, tokenImpersonating } = item.transfer;
         transfers.push({
           ...line(
             token,
@@ -152,6 +154,7 @@ export function transferRequestFromPreview(preview: SigningApprovalPreview): Tra
             collectible,
           ),
           otherTags: otherTags(item.tags, "ao").length,
+          ...(tokenImpersonating ? { impersonating: true as const } : {}),
           part,
           index,
         });
@@ -193,6 +196,7 @@ export function transferRequestFromPreview(preview: SigningApprovalPreview): Tra
       {
         ...transfer,
         otherTags: otherTags(preview.tags, reader).length,
+        ...(preview.tokenImpersonating ? { impersonating: true as const } : {}),
         part: {
           tags: preview.tags,
           decodedData: preview.decodedData,
@@ -211,7 +215,7 @@ export function transferRequestFromPreview(preview: SigningApprovalPreview): Tra
   };
 }
 
-type TokenScale = { processId: string; denomination: number | null; ticker: string | null };
+type TokenScale = { processId: string; denomination: number | null; ticker: string | null; impersonating?: true };
 
 /**
  * The transfer layout's reading of what a device payload actually signs,
@@ -247,6 +251,7 @@ export function transferRequestFromDevice(
         ...(collectibleRef
           ? line(summary.process, null, 0, COLLECTIBLE_TRANSFER_QUANTITY, summary.recipient, collectibleRef)
           : line(summary.process, known?.ticker ?? null, known?.denomination ?? null, summary.quantity, summary.recipient)),
+        ...(known?.impersonating ? { impersonating: true as const } : {}),
         part: empty,
         index,
       });
@@ -432,18 +437,23 @@ export function warningReasons(request: TransferRequest, t: TFunction): string[]
   const reasons: string[] = [];
   if (request.unreadableTokenTransfer) reasons.push(t("transferReview.unreadableTokenTransfer"));
   if (request.transfers.some(isUnknownScale)) reasons.push(t("transferReview.unknownDecimals"));
+  if (request.transfers.some(isImpersonating)) reasons.push(t("transferReview.impersonatingToken"));
   return reasons;
 }
 
+function isImpersonating(transfer: TransferLine): boolean {
+  return transfer.impersonating === true;
+}
+
 export function showsWarning(request: TransferRequest, risk: RecipientRisk | null): boolean {
-  if (request.unreadableTokenTransfer || request.transfers.some(isUnknownScale)) return true;
+  if (request.unreadableTokenTransfer || request.transfers.some(isUnknownScale) || request.transfers.some(isImpersonating)) return true;
   if (!risk) return false;
   return risk.firstTime || risk.lookalikeOf !== null || risk.unchecked === true;
 }
 
 /** Whether the red box and destructive button apply: any reason but a first-time recipient alone. */
 export function showsRisk(request: TransferRequest, risk: RecipientRisk | null): boolean {
-  if (request.unreadableTokenTransfer || request.transfers.some(isUnknownScale)) return true;
+  if (request.unreadableTokenTransfer || request.transfers.some(isUnknownScale) || request.transfers.some(isImpersonating)) return true;
   if (!risk) return false;
   return risk.lookalikeOf !== null || risk.unchecked === true;
 }

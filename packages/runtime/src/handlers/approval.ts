@@ -233,6 +233,8 @@ export interface SigningRequestInput {
   collectible?: CollectibleRef | null;
   /** See `SigningApprovalPreview.unreadableTokenTransfer`. */
   unreadableTokenTransfer?: boolean;
+  /** See `SigningApprovalPreview.tokenImpersonating`. */
+  tokenImpersonating?: boolean;
   /** Raw bytes this request will sign/encrypt/decrypt, for the payload hash and decoded preview. */
   payload: Uint8Array;
   tags?: Array<{ name: string; value: string }>;
@@ -261,7 +263,12 @@ export interface SigningRequestInput {
    * the item. `collectible` is set when the process is a collectible
    * rather than a token, so a transfer of 1 previews as that collectible.
    */
-  itemTokenMetadata?: Array<{ tokenDenomination: number | null; tokenTicker: string | null; collectible?: boolean } | null>;
+  itemTokenMetadata?: Array<{
+    tokenDenomination: number | null;
+    tokenTicker: string | null;
+    collectible?: boolean;
+    impersonating?: boolean;
+  } | null>;
   /** `encrypt`/`decrypt`'s WebCrypto algorithm parameter. */
   encryptAlgorithm?: EncryptAlgorithm;
   /** `signMessage`'s hash digest selection. */
@@ -847,6 +854,7 @@ async function buildDataItemPreviews(
                 tokenDenomination: metadata?.tokenDenomination ?? null,
                 tokenTicker: metadata?.tokenTicker ?? null,
                 ...(collectible ? { collectible } : {}),
+                ...(metadata?.impersonating ? { tokenImpersonating: true as const } : {}),
               }
             : null,
         ...(transfer?.kind === "unreadable" ? { unreadableTokenTransfer: true } : {}),
@@ -874,6 +882,7 @@ async function buildSigningPreview(input: SigningRequestInput): Promise<SigningA
     tokenTicker: input.tokenTicker ?? null,
     ...(input.collectible ? { collectible: input.collectible } : {}),
     ...(input.unreadableTokenTransfer ? { unreadableTokenTransfer: true } : {}),
+    ...(input.tokenImpersonating ? { tokenImpersonating: true } : {}),
     ...dataPreview(input.payload),
     dataSize: input.payload.byteLength,
     tags: input.tags ?? [],

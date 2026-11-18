@@ -1,10 +1,24 @@
 import { addressFromOwner } from "./address";
 import type { JWKInterface } from "../models/wallet";
 import { userErrorMessage } from "../models/user-errors";
+import { base64UrlToBytes } from "../vault/base64";
 
 const REQUIRED_JWK_FIELDS = ["kty", "e", "n", "d", "p", "q", "dp", "dq", "qi"] as const;
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+/** Arweave keys are RSA-4096 with the public exponent 65537. */
+const ARWEAVE_MODULUS_BYTES = 512;
+/** Unpadded base64url length of 512 bytes. */
+const ARWEAVE_MODULUS_CHARS = 683;
+const ARWEAVE_PUBLIC_EXPONENT = "AQAB";
+
+/** True when `n` decodes to exactly 4096 bits: 512 bytes with the top bit set. */
+function isArweaveModulus(n: string): boolean {
+  if (n.length !== ARWEAVE_MODULUS_CHARS) return false;
+  const bytes = base64UrlToBytes(n);
+  return bytes.length === ARWEAVE_MODULUS_BYTES && (bytes[0]! & 0x80) !== 0;
+}
 
 /**
  * Derives the Arweave address for a JWK. Deterministic: the same JWK
@@ -61,6 +75,10 @@ export function validateJWKShape(input: unknown): JWKValidationResult {
         reason: userErrorMessage("keyfileBadField", { key: field }),
       };
     }
+  }
+
+  if (candidate.e !== ARWEAVE_PUBLIC_EXPONENT || !isArweaveModulus(candidate.n as string)) {
+    return { valid: false, reason: userErrorMessage("keyfileUnsupportedSize") };
   }
 
   return {

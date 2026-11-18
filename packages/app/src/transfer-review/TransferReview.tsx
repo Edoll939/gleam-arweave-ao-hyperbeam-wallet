@@ -141,6 +141,7 @@ export function TransferReview({
           {warning}
           <div className={`flex flex-col gap-3.5 pt-8 ${GUTTER}`}>
             <SummaryRow label={t("transferReview.token")} value={<TokenValue transfer={first} />} />
+            <DataRow transfer={first} />
             <SummaryRow label={t("transferReview.networkFee")} value={<FeeValue fee={request.fee} context={context} />} />
             {balanceAfter !== undefined ? <SummaryRow label={t("transferReview.balanceAfter")} value={<BalanceAfter parts={balanceAfter} />} /> : null}
           </div>
@@ -267,7 +268,7 @@ function BatchHero({ request, context }: { request: TransferRequest; context: Tr
   );
 }
 
-function TransferCard({ transfer, context }: { transfer: TransferLine; context: TransferContext }) {
+function TransferCard({ transfer, context }: { transfer: TransferLine & { part: SignedPart }; context: TransferContext }) {
   const t = useT();
   const identity = useAddressIdentity();
   const fiat = fiatText(context, transfer);
@@ -312,9 +313,19 @@ function TransferCard({ transfer, context }: { transfer: TransferLine; context: 
             />
           )}
         </div>
-      ) : null}
+      ) : (
+        <DataRow transfer={transfer} />
+      )}
     </div>
   );
+}
+
+/** An AR transfer can also carry data, which is signed with it, so its size sits beside the amount. */
+function DataRow({ transfer }: { transfer: TransferLine & { part: SignedPart } }) {
+  const t = useT();
+  const size = transfer.part.dataSize ?? 0;
+  if (transfer.token !== null || size <= 0) return null;
+  return <SummaryRow label={t("approval.data")} value={t("approval.bytes", { size: String(size) })} />;
 }
 
 function Parties({
@@ -389,10 +400,10 @@ function FromValue({ from }: { from: { name: string | null; address: string } })
 function TokenValue({ transfer }: { transfer: TransferLine }) {
   const t = useT();
   if (transfer.token === null) return <>AR</>;
-  if (transfer.collectible || isUnknownScale(transfer)) {
+  if (transfer.collectible || isUnknownScale(transfer) || transfer.impersonating) {
     return (
       <span dir="ltr" className="block max-w-[13.5rem] break-all text-right font-mono text-label leading-snug text-foreground">
-        {transfer.collectible ? truncateAddress(transfer.token, 6) : transfer.token}
+        {transfer.collectible && !transfer.impersonating ? truncateAddress(transfer.token, 6) : transfer.token}
       </span>
     );
   }

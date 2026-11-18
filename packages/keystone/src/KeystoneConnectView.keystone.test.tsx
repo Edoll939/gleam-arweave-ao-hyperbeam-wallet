@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ArweaveCryptoAccount } from "@keystonehq/bc-ur-registry-arweave";
-import type { RuntimePort } from "@gleam/core";
+import { addressFromOwner, type RuntimePort } from "@gleam/core";
 import type { QrScannerProps } from "./QrScanner";
 import { KeystoneConnectView, type KeystoneConnectViewProps } from "./KeystoneConnectView";
 
@@ -39,11 +39,12 @@ async function scanToConfirm(send: RuntimePort["send"], props: Partial<KeystoneC
 }
 
 describe("KeystoneConnectView", () => {
-  it("shows the truncated address, sends addHardwareWallet with the default name left to the background, and reports the wallet", async () => {
+  it("shows the full address to check against the Keystone, sends addHardwareWallet with the default name left to the background, and reports the wallet", async () => {
     const send = vi.fn().mockResolvedValue({ id: "w1" });
     const onConnected = vi.fn();
     await scanToConfirm(send as never, { onConnected });
-    expect(screen.getByText(/^[\w-]{5}…[\w-]{4}$/)).toBeTruthy();
+    expect(screen.getByText("Check the address on your Keystone matches:")).toBeTruthy();
+    expect(screen.getByText(await addressFromOwner(modulus.toString("base64url")))).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Connect" }));
     await waitFor(() => expect(onConnected).toHaveBeenCalledWith({ id: "w1" }));

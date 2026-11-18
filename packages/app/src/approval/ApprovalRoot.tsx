@@ -364,6 +364,7 @@ function ApprovalRootContent({
                 processId: request.preview.token,
                 denomination: request.preview.tokenDenomination,
                 ticker: request.preview.tokenTicker,
+                ...(request.preview.tokenImpersonating ? { impersonating: true as const } : {}),
               }
             : undefined
         }
