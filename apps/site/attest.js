@@ -111,7 +111,7 @@ function watchReadiness(isIdle, onChange) {
 }
 
 function resultLabel(attestation) {
-  return attestation.result === "pass" ? "pass (nothing reported)" : "scanned (a fix PR or an advisory was filed)";
+  return attestation.result === "pass" ? "pass (nothing reported)" : "scanned (an advisory was filed)";
 }
 
 function fillAnswers(list, attestation) {
