@@ -244,7 +244,7 @@ describe("pnpm scan finish: the round offer", () => {
     const outcome = await runFinish(deps);
     expect(outcome.ok).toBe(true);
     const out = render(outcome, false).split("\n");
-    const warning = out.findIndex((line) => line.startsWith(`! ${KEYS}/advisory-1.md: 270 words above <details>`));
+    const warning = out.findIndex((line) => line.startsWith(`! ${KEYS}/advisory-1.md: 270 words in the Summary`));
     expect(warning).toBeGreaterThan(0);
     expect(warning).toBeLessThan(out.indexOf(CLOSING_HEADER));
     expect(outcome.json).toMatchObject({ warnings: [out[warning]] });

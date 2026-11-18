@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { attackerNames, draftFields, draftProblems, hasTestBlock, rubricSeverity } from "./drafts.ts";
+import { readFileSync } from "node:fs";
+import { FIELDS, FILED, LOSSES, REQUIRES, attackerNames, draftFields, draftProblems, hasTestBlock, rubricSeverity } from "./drafts.ts";
 import { COMMIT, THREAT_MODEL, goodAdvisory, makeDeps, writeRound } from "./harness.ts";
 
 const DIR = ".gleam-scan/rounds/keys";
@@ -24,8 +25,8 @@ describe("rubricSeverity", () => {
 });
 
 describe("draft parsing", () => {
-  it("reads the rating lines once each, in any case, without backticks", () => {
-    expect(draftFields("severity: High\nLoss: `mismatch`\nLoss: key\nFix location: a.ts#f")).toEqual({
+  it("reads each form section once, in any case, without backticks around a one-line answer", () => {
+    expect(draftFields("Title: x\n\n### severity\n\nHigh\n\n### Loss\n\n`mismatch`\n\n### Loss\n\nkey\n\n### Fix location\n\na.ts#f\n\n### Other\n\nz")).toEqual({
       severity: "High",
       loss: "mismatch",
       "fix location": "a.ts#f",
@@ -57,14 +58,16 @@ describe("draftProblems", () => {
   it("names the missing lines and the missing test", async () => {
     const out = await problems({ "advisory-1.md": "Title: x\nShort." });
     expect(out).toEqual([
-      `${DIR}/advisory-1.md: add the \`Severity:\`, \`Attacker:\`, \`Loss:\`, \`Requires:\`, \`Fix location:\` lines under the attestation id (security/scan/REPORT.md § Rating lines).`,
-      `${DIR}/advisory-1.md: add the failing test as a \`\`\`ts block in <details>: a Vitest \`it(…)\` that fails at the tag (security/scan/REPORT.md).`,
+      `${DIR}/advisory-1.md: add the \`### Summary\`, \`### Severity\`, \`### Attacker\`, \`### Loss\`, \`### Requires\`, \`### Fix location\`, \`### Attestation id\`, \`### Failing test\`, \`### Details\` sections, in the order .github/VULNERABILITY_REPORT.yml gives (security/scan/REPORT.md § Advisory shape).`,
+    ]);
+    expect(await problems({ "advisory-1.md": goodAdvisory("x", { "Failing test": "None yet." }) })).toEqual([
+      `${DIR}/advisory-1.md: under \`### Failing test\`, put a Vitest \`it(…)\` that fails at the tag, in a \`\`\`ts block (security/scan/REPORT.md).`,
     ]);
   });
 
   it("refuses a severity above what the answers give, and allows one below", async () => {
     const [inflated] = await problems({ "advisory-1.md": goodAdvisory("x", { Severity: "critical" }) });
-    expect(inflated).toMatch(/Severity is critical, but Loss: mismatch with Requires: one-click gives high .* set `Severity: high`/);
+    expect(inflated).toMatch(/Severity is critical, but Loss: mismatch with Requires: one-click gives high .* set `### Severity` to High/);
     expect(await problems({ "advisory-1.md": goodAdvisory("x", { Severity: "medium" }) })).toEqual([]);
     const [low] = await problems({ "advisory-1.md": goodAdvisory("x", { Severity: "medium", Loss: "none" }) });
     expect(low).toMatch(/Loss: none with Requires: one-click is Low/);
@@ -90,5 +93,31 @@ describe("draftProblems", () => {
       expect.stringMatching(/names `nope`, which isn't a function in pkg\/a\.ts/),
     ]);
     expect(await problems({ "advisory-1.md": goodAdvisory("x", { "Fix location": "pkg/c.ts#KeySession.get" }) })).toEqual([]);
+  });
+});
+
+describe("the report form", () => {
+  const form = readFileSync(new URL("../../.github/VULNERABILITY_REPORT.yml", import.meta.url), "utf8");
+  /** The labels in form order, and each dropdown's options, read from the form's fixed layout. */
+  const labels = [...form.matchAll(/^ {6}label: (.+)$/gm)].map((m) => m[1]!);
+  const options = (id: string) => {
+    const at = form.indexOf(`    id: ${id}\n`);
+    const block = form.slice(at, form.indexOf("    validations:", at));
+    return [...block.matchAll(/^ {8}- (.+)$/gm)].map((m) => m[1]!);
+  };
+
+  it("asks for every section the CLI checks, in the same order", () => {
+    expect(labels.map((label) => label.toLowerCase())).toEqual([...FIELDS]);
+  });
+
+  it("offers only the severities that are filed, and the rubric's answers", () => {
+    expect(options("severity").map((o) => o.toLowerCase())).toEqual([...FILED]);
+    expect(options("loss")).toEqual(LOSSES.filter((loss) => loss !== "none"));
+    expect(options("requires")).toEqual([...REQUIRES]);
+  });
+
+  it("offers the threat model's attackers", () => {
+    const threatModel = readFileSync(new URL("../../docs/THREAT_MODEL.md", import.meta.url), "utf8");
+    expect(options("attacker")).toEqual(attackerNames(threatModel));
   });
 });

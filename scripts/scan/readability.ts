@@ -5,8 +5,30 @@ import { readText, type Deps } from "./shared.ts";
 /** The limits `security/scan/REPORT.md` sets for the part of an advisory above `<details>`. */
 export const MAX_WORDS = 120;
 export const MAX_GRADE = 8;
-/** An advisory's rating line (REPORT.md § Rating lines), skipped like the attestation id line. */
-export const FIELD_LINE = /^(severity|attacker|loss|requires|fix location):[ \t]*(.*)$/i;
+/**
+ * The `### <label>` sections of a report in `.github/VULNERABILITY_REPORT.yml`'s
+ * shape, keyed by lowercase label: each section's text up to the next
+ * `### ` heading, trimmed. A label given twice keeps its first section.
+ */
+export function reportSections(markdown: string): Map<string, string> {
+  const out = new Map<string, string>();
+  let label: string | undefined;
+  let lines: string[] = [];
+  const flush = () => {
+    if (label !== undefined && !out.has(label)) out.set(label, lines.join("\n").trim());
+  };
+  for (const line of markdown.split("\n")) {
+    const m = /^###[ \t]+(.+?)[ \t]*$/.exec(line);
+    if (m) {
+      flush();
+      label = m[1]!.toLowerCase();
+      lines = [];
+    } else if (label !== undefined) lines.push(line);
+  }
+  flush();
+  return out;
+}
+
 /** About one sentence: REPORT.md § Advisory title. */
 export const MAX_TITLE_CHARS = 100;
 
@@ -45,7 +67,7 @@ function proseBlocks(markdown: string): string[] {
   };
   for (const raw of text.split("\n")) {
     const line = raw.trim();
-    if (line === "" || /^attestation id:/i.test(line) || FIELD_LINE.test(line) || /^\|/.test(line)) {
+    if (line === "" || /^attestation id:/i.test(line) || /^\|/.test(line)) {
       flush();
       continue;
     }
@@ -106,16 +128,17 @@ export function titleProblems(title: string | undefined): string[] {
 /** One `! <file>: …` line for a draft whose title or summary breaks REPORT.md, else undefined. */
 export function draftWarning(file: string, markdown: string): string | undefined {
   const { title, body } = splitTitle(markdown);
-  const { words, grade } = readability(aboveTheFold(body));
+  // A report in the form's shape is skimmed by its Summary section.
+  const { words, grade } = readability(reportSections(body).get("summary") ?? aboveTheFold(body));
   const titled = titleProblems(title);
   const problems = [...titled];
-  if (words > MAX_WORDS) problems.push(`${words} words above <details> (limit ${MAX_WORDS})`);
+  if (words > MAX_WORDS) problems.push(`${words} words in the Summary (limit ${MAX_WORDS})`);
   if (grade > MAX_GRADE) problems.push(`reading grade ${grade} (limit ${MAX_GRADE})`);
   if (problems.length === 0) return undefined;
   const fixes = [
     ...(title === undefined || title === "" ? ["start the draft with a Title: line"] : []),
     ...(titled.length > 0 ? ["name the risk in the user's words"] : []),
-    ...(words > MAX_WORDS ? ["move impact, steps, traces and code into <details>"] : []),
+    ...(words > MAX_WORDS ? ["move impact, steps, traces and code into Details"] : []),
     ...(grade > MAX_GRADE ? ["use short sentences and common words"] : []),
   ];
   return `! ${file}: ${problems.join(", ")}; ${fixes.join(", and ")} (security/scan/REPORT.md).`;

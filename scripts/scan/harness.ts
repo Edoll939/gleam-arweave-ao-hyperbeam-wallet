@@ -38,22 +38,19 @@ export const THREAT_MODEL = "# Threat model\n\n## Attackers\n\n| Attacker | What
 
 /** An advisory draft that passes every draft check against the default fake git. */
 export function goodAdvisory(title = "A site can read balances", overrides: Record<string, string> = {}): string {
-  const fields = { Severity: "high", Attacker: "Malicious website", Loss: "mismatch", Requires: "one-click", "Fix location": "pkg/a.ts#unlockVault", ...overrides };
-  return [
-    `Title: ${title}`,
-    "Short.",
-    "",
-    "Attestation id: {{ATTESTATION_ID}}",
-    ...Object.entries(fields).map(([key, value]) => `${key}: ${value}`),
-    "",
-    "<details>",
-    "",
-    "```ts",
-    'it("fails at the tag", () => {});',
-    "```",
-    "",
-    "</details>",
-  ].join("\n");
+  const fields: Record<string, string> = {
+    Summary: "Short.",
+    Severity: "High",
+    Attacker: "Malicious website",
+    Loss: "mismatch",
+    Requires: "one-click",
+    "Fix location": "pkg/a.ts#unlockVault",
+    "Attestation id": "{{ATTESTATION_ID}}",
+    "Failing test": '```ts\nit("fails at the tag", () => {});\n```',
+    Details: "Steps.",
+    ...overrides,
+  };
+  return [`Title: ${title}`, ...Object.entries(fields).flatMap(([key, value]) => ["", `### ${key}`, "", value])].join("\n");
 }
 
 /** `GET /scan/areas`: boundary is the least covered, build has too few functions to challenge. */

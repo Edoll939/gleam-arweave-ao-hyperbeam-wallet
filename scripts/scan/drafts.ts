@@ -1,5 +1,5 @@
 import { findFunction, isJsxPath } from "../../packages/core/src/scan/index.ts";
-import { FIELD_LINE, advisoryDrafts, prDrafts } from "./readability.ts";
+import { advisoryDrafts, prDrafts, reportSections } from "./readability.ts";
 import { readText, showAtCommit, type Deps, type Problem } from "./shared.ts";
 
 /** SECURITY.md § Severity, question 2. */
@@ -24,20 +24,24 @@ export function rubricSeverity(loss: Loss, requires: Requires): Level {
   return "high";
 }
 
-/** The rating lines an advisory carries, keyed lowercase. */
-export const FIELDS = ["severity", "attacker", "loss", "requires", "fix location"] as const;
+/**
+ * The sections `.github/VULNERABILITY_REPORT.yml` requires, as their
+ * labels, lowercase. GitHub refuses a report through the API without them.
+ */
+export const FIELDS = ["summary", "severity", "attacker", "loss", "requires", "fix location", "attestation id", "failing test", "details"] as const;
 type Field = (typeof FIELDS)[number];
 
+/** Each section's answer; a one-line answer loses any backticks around it. */
 export function draftFields(markdown: string): Partial<Record<Field, string>> {
   const out: Partial<Record<Field, string>> = {};
-  for (const raw of markdown.split("\n")) {
-    const m = FIELD_LINE.exec(raw.trim());
-    if (!m) continue;
-    const key = m[1]!.toLowerCase() as Field;
-    if (out[key] === undefined) out[key] = m[2]!.trim().replace(/^`|`$/g, "");
+  for (const [label, text] of reportSections(markdown)) {
+    if (!(FIELDS as readonly string[]).includes(label) || text === "") continue;
+    out[label as Field] = text.includes("\n") ? text : text.replace(/^`|`$/g, "");
   }
   return out;
 }
+
+const heading = (key: string) => `\`### ${key[0]!.toUpperCase()}${key.slice(1)}\``;
 
 /** The first cell of each row of THREAT_MODEL.md § Attackers. */
 export function attackerNames(threatModel: string): string[] {
@@ -63,8 +67,8 @@ const list = (values: readonly string[]) => values.map((v) => `\`${v}\``).join("
 
 /**
  * Blocking problems in a round's drafts: a PR draft at all, and an advisory
- * without the rating lines, rated above what its own answers give, or
- * without a fix location at the tag or a failing test.
+ * missing a section the report form requires, rated above what its own
+ * answers give, or without a fix location at the tag or a failing test.
  */
 export async function draftProblems(deps: Deps, dir: string, commit: string): Promise<Problem[]> {
   const problems: Problem[] = [];
@@ -89,8 +93,8 @@ async function advisoryProblems(deps: Deps, commit: string, file: string, text: 
   const f = draftFields(text);
   const missing = FIELDS.filter((key) => !f[key]);
   if (missing.length > 0) {
-    const names = missing.map((key) => `\`${key[0]!.toUpperCase()}${key.slice(1)}:\``).join(", ");
-    push(`add the ${names} ${missing.length === 1 ? "line" : "lines"} under the attestation id (security/scan/REPORT.md § Rating lines).`);
+    const names = missing.map(heading).join(", ");
+    push(`add the ${names} ${missing.length === 1 ? "section" : "sections"}, in the order .github/VULNERABILITY_REPORT.yml gives (security/scan/REPORT.md § Advisory shape).`);
   }
 
   const severity = f.severity?.toLowerCase();
@@ -121,7 +125,7 @@ async function advisoryProblems(deps: Deps, commit: string, file: string, text: 
     if (rubric === "low") {
       push(`Loss: ${loss} with Requires: ${requires} is Low (SECURITY.md § Severity), which isn't filed; drop it, and delete ${file}.`);
     } else if (RANK[severity as Level] > RANK[rubric]) {
-      push(`Severity is ${severity}, but Loss: ${loss} with Requires: ${requires} gives ${rubric} (SECURITY.md § Severity); set \`Severity: ${rubric}\`. A report rated above what it shows loses its scan points.`);
+      push(`Severity is ${severity}, but Loss: ${loss} with Requires: ${requires} gives ${rubric} (SECURITY.md § Severity); set \`### Severity\` to ${rubric[0]!.toUpperCase()}${rubric.slice(1)}. A report rated above what it shows loses its scan points.`);
     }
   }
 
@@ -138,6 +142,8 @@ async function advisoryProblems(deps: Deps, commit: string, file: string, text: 
     }
   }
 
-  if (!hasTestBlock(text)) push("add the failing test as a ```ts block in <details>: a Vitest `it(…)` that fails at the tag (security/scan/REPORT.md).");
+  if (f["failing test"] !== undefined && !hasTestBlock(f["failing test"])) {
+    push("under `### Failing test`, put a Vitest `it(…)` that fails at the tag, in a ```ts block (security/scan/REPORT.md).");
+  }
   return out;
 }
