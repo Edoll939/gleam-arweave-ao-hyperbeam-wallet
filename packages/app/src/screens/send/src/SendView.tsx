@@ -987,7 +987,9 @@ export function RecipientField({
               aria-label={t("send.savedContacts")}
               // Keeps focus in the input, so a click lands before the blur closes the list.
               onMouseDown={(event) => event.preventDefault()}
-              className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-md bg-surface shadow-[0_8px_24px_rgba(0,0,0,0.10),0_1px_3px_rgba(0,0,0,0.06)]"
+              // In flow on the phone: floating, it sits under the pinned footer and adds
+              // no scroll height, so with the keyboard up its rows can't be reached.
+              className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden phone:static rounded-md bg-surface shadow-[0_8px_24px_rgba(0,0,0,0.10),0_1px_3px_rgba(0,0,0,0.06)]"
             >
               {shownSuggestions.length > 0 ? (
                 <div className="py-1">
