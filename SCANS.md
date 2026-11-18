@@ -28,16 +28,19 @@ professional audit.
    in a fresh one.
 3. **The agent reports what it finds.** Only a finding rated Medium or
    above is filed, as a private GitHub advisory. A Low finding is
-   dropped, and a scan files no PRs. Each advisory has a short summary on
-   top, the rating lines, and its detail and failing test folded under
-   `<details>` ([`REPORT.md`](security/scan/REPORT.md)).
+   dropped, and a scan files no PRs. Each advisory follows the repository's
+   report form (`.github/VULNERABILITY_REPORT.yml`), which GitHub
+   enforces on the site and the API: a plain summary, the three rubric
+   answers, the fix location, a failing test and the details
+   ([`REPORT.md`](security/scan/REPORT.md)). The form's Severity offers
+   only Medium, High and Critical.
 4. **The agent checks its own work.** `pnpm scan finish` reads the
    round's attestation, fills `release` and `commit` from git, runs the
    core checks locally, then sends the attestation to
    `POST /attestations/check`, which runs every server check that doesn't
    need your signature. Each failure prints one line,
    `✗ <field>: <what to change>`, and the agent fixes it before you see
-   anything. It also fails an advisory draft that lacks a rating line or
+   anything. It also fails an advisory draft that lacks a form section or
    the failing test, rates itself above what its own answers give, or
    names a fix location that isn't a function at the tag, and any PR
    draft. A draft advisory that runs long or reads hard gets a `!`
@@ -283,7 +286,7 @@ balance:
 Nothing below Medium earns: no Low finding, hardening, test, docs or
 skill PR. The severity comes from the three questions in
 [SECURITY.md § Severity](SECURITY.md#severity), which every advisory
-answers in its rating lines and the maintainer answers the same way. A
+answers in its report form and the maintainer answers the same way. A
 finding's fix earns the bonus when the patch in its advisory merges
 largely as written. A **review round** is one pass in which a maintainer
 rates the open reports. The highest-rated finding accepted in a review
@@ -316,14 +319,14 @@ These are the current values. They are tuned per release.
 
 - **PRs:** a scan files none, and a PR earns nothing. Review one like
   any outside PR; nothing merges automatically.
-- **Advisories:** check for an `Attestation id:` line first. If it is
+- **Advisories:** check for the attestation id first. If it is
   missing or reads `none`, comment on the advisory asking for the id of
   any attestation the reporter's wallet has signed, while it is still in
   triage, since only the id links the finding to a wallet. Then reproduce the finding, set the real severity, fix it
   privately, ship the fix, and publish the advisory with credit to
   the reporter. Close duplicates, reports that don't reproduce, and
   by-design reports with a one-line reason, and dock the ones the
-  Quality rules name. Group reports by their `Fix location:` line first: reports
+  Quality rules name. Group reports by their Fix location first: reports
   naming one function are often one bug.
 - **Fix bonus:** once a reporter's fix merges, pay it with
   `--severity fix` and the finding's `--ref`.
@@ -371,7 +374,7 @@ and the classes of bug that cut across them, and
 [`VERIFY.md`](security/scan/VERIFY.md), which a fresh subagent (or the
 scanning agent itself) follows to try to disprove one finding and rate
 what survives, and [`REPORT.md`](security/scan/REPORT.md), the shape and
-style and rating lines of an advisory. In summary:
+style and form sections of an advisory. In summary:
 
 1. Check out the latest release tag and run `pnpm scan start`, with
    `--area <id>` when the user names an area. It writes the round folder
@@ -393,7 +396,7 @@ style and rating lines of an advisory. In summary:
    checked against `origin/master`. One that master already fixes is
    drafted as an advisory that says so.
 7. Draft the reports, as `REPORT.md` says. Only Medium and above is
-   drafted, as a private advisory with its rating lines, its failing
+   drafted, as a private advisory in the report form's shape, with its failing
    test, and the fix as a patch inside it when the agent has one. A Low
    finding is dropped, and no PR is drafted. Before drafting, the agent
    checks each finding against the published advisories and drops one
@@ -422,9 +425,9 @@ style and rating lines of an advisory. In summary:
   attack.
 - Say once whether a finding was demonstrated, traced or needs a
   browser check, then write plainly.
-- Above `<details>`, put only the title, a plain summary of about 100
-  words at reading grade 6 to 7, and the rating lines. Everything else
-  goes inside it.
+- Keep the title and the Summary plain: about 100 words at reading
+  grade 6 to 7. Code names, traces and test code go under Failing test
+  and Details.
 - A clean `pass` earns the same as `scanned`. Padding a report with
   weak findings earns nothing.
 

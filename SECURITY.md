@@ -15,25 +15,16 @@ Use [GitHub's private vulnerability reporting](https://github.com/skyf0xx/gleam-
 for this repository (Security tab → Report a vulnerability). This opens a
 private draft advisory visible only to maintainers until a fix ships.
 
-Include:
+The report form ([`.github/VULNERABILITY_REPORT.yml`](.github/VULNERABILITY_REPORT.yml))
+asks for a summary, the answers to the three questions under Severity,
+the function a fix has to change, a failing test and the details. It
+accepts only Medium and above. A report through the API carries the same
+sections, as `### <label>` headings in its description.
 
-- Steps to reproduce, and a failing test where you can write one.
-- The answers to the three questions under Severity, and the function a
-  fix has to change, as lines of their own:
-
-  ```text
-  Severity: high
-  Attacker: Malicious website
-  Loss: mismatch
-  Requires: one-click
-  Fix location: packages/core/src/ao/other-tags.ts#otherTags
-  ```
-
-If you have signed a [community scan](SCANS.md), include its
-attestation id as a line of its own, `Attestation id: <64 hex characters>`,
-so the finding is credited to the wallet that signed the scan. Any
-attestation your wallet signed works, not only the one from the round
-that found the issue.
+If you have signed a [community scan](SCANS.md), put its attestation id
+in the form's Attestation id field, so the finding is credited to the
+wallet that signed the scan. Any attestation your wallet signed works,
+not only the one from the round that found the issue.
 
 ## Severity
 
