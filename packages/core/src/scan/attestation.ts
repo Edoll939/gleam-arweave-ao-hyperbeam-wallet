@@ -125,7 +125,7 @@ export function parseAttestation(value: unknown): ParseAttestationResult {
     issues.push(invalid("challenge", "must be the challenge id `pnpm scan start` printed, unchanged"));
   }
   if ("result" in value && value.result !== "pass" && value.result !== "scanned") {
-    issues.push(invalid("result", 'must be "pass" if you filed nothing, or "scanned" if you filed a PR or an advisory'));
+    issues.push(invalid("result", 'must be "pass" if you filed nothing, or "scanned" if you filed an advisory'));
   }
   const report = value.report;
   if ("report" in value && !flagged.has("report")) {

@@ -5,6 +5,8 @@ import { readText, type Deps } from "./shared.ts";
 /** The limits `security/scan/REPORT.md` sets for the part of an advisory above `<details>`. */
 export const MAX_WORDS = 120;
 export const MAX_GRADE = 8;
+/** An advisory's rating line (REPORT.md § Rating lines), skipped like the attestation id line. */
+export const FIELD_LINE = /^(severity|attacker|loss|requires|fix location):[ \t]*(.*)$/i;
 /** About one sentence: REPORT.md § Advisory title. */
 export const MAX_TITLE_CHARS = 100;
 
@@ -43,7 +45,7 @@ function proseBlocks(markdown: string): string[] {
   };
   for (const raw of text.split("\n")) {
     const line = raw.trim();
-    if (line === "" || /^attestation id:/i.test(line) || /^\|/.test(line)) {
+    if (line === "" || /^attestation id:/i.test(line) || FIELD_LINE.test(line) || /^\|/.test(line)) {
       flush();
       continue;
     }

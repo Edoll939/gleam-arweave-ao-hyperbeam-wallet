@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { encodeAttestationPayload, parseAttestation, type ScanAreaId } from "../../packages/core/src/scan/index.ts";
 import { main, render } from "./cli.ts";
-import { UNKNOWN, exists, fakeApi, finishedAttestation, goodAttestation, idOf, json, makeDeps, put, readJsonFile, writeRound, type Handler } from "./harness.ts";
+import { UNKNOWN, exists, fakeApi, finishedAttestation, goodAdvisory, goodAttestation, idOf, json, makeDeps, put, readJsonFile, writeRound, type Handler } from "./harness.ts";
 import { runNext, type NextResponse } from "./next.ts";
 import { CLOSING_HEADER, type Deps } from "./shared.ts";
 
@@ -71,8 +71,8 @@ describe("pnpm scan next", () => {
 
   it("ends with the sign request for the rounds still unsigned", async () => {
     const deps = makeDeps();
-    const keys = await waitingRound(deps, "keys", 1, { "pr-1.md": "x" });
-    await waitingRound(deps, "signing", 2, { "advisory-1.md": "Title: x", "pr-1.md": "y" });
+    const keys = await waitingRound(deps, "keys", 1, { "advisory-1.md": goodAdvisory() });
+    await waitingRound(deps, "signing", 2, { "advisory-1.md": goodAdvisory(), "advisory-2.md": goodAdvisory() });
     await waitingRound(deps, "preview", 3);
     deps.fetchImpl = nextApi({ [keys]: NEXT });
     const outcome = await runNext(deps);
@@ -87,7 +87,7 @@ describe("pnpm scan next", () => {
       "2 rounds are ready to sign, with 2 reports to file.",
       "",
       `1. Open this link and sign each round in Gleam: https://site.test/attest.html#${payload("signing")}.${payload("preview")}`,
-      '2. Reply "signed" and I\'ll file the reports: fork, push, open each PR and file each advisory.',
+      '2. Reply "signed" and I\'ll file the reports: file each advisory as a private report on GitHub.',
     ]);
     expect(exists(deps, ".gleam-scan/rounds/keys/signed.json")).toBe(true);
     expect(exists(deps, ".gleam-scan/rounds/signing/signed.json")).toBe(false);
@@ -129,7 +129,7 @@ describe("pnpm scan next", () => {
 
   it("asks to add the ids once the unsigned round's reports are filed without them", async () => {
     const deps = makeDeps();
-    await waitingRound(deps, "keys", 1, { "pr-1.md": "x", "filed.txt": "pr-1.md https://github.com/x/pull/9\n" });
+    await waitingRound(deps, "keys", 1, { "advisory-1.md": goodAdvisory(), "filed.txt": "advisory-1.md https://github.com/x/security/advisories/GHSA-9\n" });
     const out = render(await runNext(deps), false).split("\n");
     expect(out.slice(-4)).toEqual([
       "1 round is ready to sign.",

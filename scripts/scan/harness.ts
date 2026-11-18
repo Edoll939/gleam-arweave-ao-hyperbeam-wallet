@@ -34,6 +34,28 @@ export const CHALLENGE = challengeFor("keys");
 
 export const SURFACE = "# tiers\n1 pkg/\n";
 
+export const THREAT_MODEL = "# Threat model\n\n## Attackers\n\n| Attacker | What they try |\n| --- | --- |\n| Malicious website | Sign without consent |\n| Someone at an unlocked browser | Send funds |\n\n## Next\n";
+
+/** An advisory draft that passes every draft check against the default fake git. */
+export function goodAdvisory(title = "A site can read balances", overrides: Record<string, string> = {}): string {
+  const fields = { Severity: "high", Attacker: "Malicious website", Loss: "mismatch", Requires: "one-click", "Fix location": "pkg/a.ts#unlockVault", ...overrides };
+  return [
+    `Title: ${title}`,
+    "Short.",
+    "",
+    "Attestation id: {{ATTESTATION_ID}}",
+    ...Object.entries(fields).map(([key, value]) => `${key}: ${value}`),
+    "",
+    "<details>",
+    "",
+    "```ts",
+    'it("fails at the tag", () => {});',
+    "```",
+    "",
+    "</details>",
+  ].join("\n");
+}
+
 /** `GET /scan/areas`: boundary is the least covered, build has too few functions to challenge. */
 export const AREAS = {
   release: "1.4.0",
@@ -61,7 +83,7 @@ export function fakeGit(
   const {
     head = COMMIT,
     tags = ["v1.4.0"],
-    files = { "pkg/a.ts": SOURCE, "pkg/b.ts": SOURCE, "pkg/c.ts": SOURCE, "security/surface.txt": SURFACE },
+    files = { "pkg/a.ts": SOURCE, "pkg/b.ts": SOURCE, "pkg/c.ts": SOURCE, "security/surface.txt": SURFACE, "docs/THREAT_MODEL.md": THREAT_MODEL },
     paths = [],
   } = state;
   return async (args) => {

@@ -15,6 +15,7 @@ import {
   type ScanIssue,
 } from "../../packages/core/src/scan/index.ts";
 import { callApi } from "./api.ts";
+import { draftProblems } from "./drafts.ts";
 import { draftWarnings } from "./readability.ts";
 import {
   fetchAreas,
@@ -197,6 +198,7 @@ async function validate(deps: Deps, area: ScanAreaId, rerun: string, then: strin
   }
 
   if (deps.now() >= Date.parse(challenge.expiresAt)) push("challenge", `The challenge expired at ${challenge.expiresAt}; ${restart}.`);
+  issues.push(...(await draftProblems(deps, paths.dir, commit)));
   if (issues.length > 0 || !parsed.ok) return failed(issues, notes);
 
   // Local checks pass, so ask the server (latest release, unexpired and unused challenge).
