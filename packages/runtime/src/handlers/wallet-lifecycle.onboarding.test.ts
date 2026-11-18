@@ -139,11 +139,11 @@ function createFakeStorage(): StoragePort {
 /**
  * A real RSA key: the keyring imports it through WebCrypto, and a stricter
  * OpenSSL build rejects a placeholder modulus that Node's default one lets
- * through. 2048 bits rather than 4096 keeps generation fast.
+ * through. Generated once per file: 4096-bit keys are slow to make.
  */
 async function generateTestJwk(): Promise<JWKInterface> {
   const pair = await crypto.subtle.generateKey(
-    { name: "RSA-PSS", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+    { name: "RSA-PSS", modulusLength: 4096, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
     true,
     ["sign", "verify"],
   );

@@ -233,7 +233,7 @@ describe("OnboardingView: import flow", () => {
         value: JSON.stringify({
           kty: "RSA",
           e: "AQAB",
-          n: "n".repeat(10),
+          n: "w".repeat(683),
           d: "d".repeat(10),
           p: "p".repeat(10),
           q: "q".repeat(10),
@@ -252,7 +252,7 @@ describe("OnboardingView: import flow", () => {
 const VALID_JWK = {
   kty: "RSA",
   e: "AQAB",
-  n: "n".repeat(10),
+  n: "w".repeat(683),
   d: "d".repeat(10),
   p: "p".repeat(10),
   q: "q".repeat(10),

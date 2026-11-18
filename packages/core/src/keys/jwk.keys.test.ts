@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import Arweave from "arweave";
 import { deriveAddress, validateJWKShape } from "./jwk";
 import { generateJWK } from "../signer/keys";
+import { userErrorMessage } from "../models/user-errors";
+import { base64UrlToBytes, bytesToBase64Url } from "../vault/base64";
 
 describe("deriveAddress", () => {
   it("is deterministic for the same JWK", async () => {
@@ -101,18 +103,34 @@ describe("validateJWKShape", () => {
     expect(result.valid).toBe(false);
   });
 
-  it("accepts a well-formed RSA JWK shape", () => {
-    const result = validateJWKShape({
-      kty: "RSA",
-      e: "AQAB",
-      n: "abc-_123",
-      d: "abc-_123",
-      p: "abc-_123",
-      q: "abc-_123",
-      dp: "abc-_123",
-      dq: "abc-_123",
-      qi: "abc-_123",
+  it("accepts a generated 4096-bit Arweave key", async () => {
+    const jwk = await generateJWK();
+    expect(validateJWKShape(jwk)).toEqual({ valid: true, jwk });
+  });
+
+  it("refuses a 2048-bit key", async () => {
+    const pair = await crypto.subtle.generateKey(
+      { name: "RSA-PSS", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+      true,
+      ["sign", "verify"],
+    );
+    const jwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
+    expect(validateJWKShape(jwk)).toEqual({ valid: false, reason: userErrorMessage("keyfileUnsupportedSize") });
+  });
+
+  it("refuses a 512-byte modulus whose top bit is clear", async () => {
+    const jwk = await generateJWK();
+    const bytes = base64UrlToBytes(jwk.n);
+    bytes[0] = 0x7f;
+    const result = validateJWKShape({ ...jwk, n: bytesToBase64Url(bytes) });
+    expect(result).toEqual({ valid: false, reason: userErrorMessage("keyfileUnsupportedSize") });
+  });
+
+  it("refuses an exponent other than 65537", async () => {
+    const jwk = await generateJWK();
+    expect(validateJWKShape({ ...jwk, e: "Aw" })).toEqual({
+      valid: false,
+      reason: userErrorMessage("keyfileUnsupportedSize"),
     });
-    expect(result.valid).toBe(true);
   });
 });

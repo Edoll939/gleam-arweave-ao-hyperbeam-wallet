@@ -51,6 +51,7 @@ export const USER_ERRORS = {
   keyfileEmptyField: 'That file isn\'t a valid Arweave keyfile. Field "{key}" must be a non-empty string.',
   keyfileBadField: 'That file isn\'t a valid Arweave keyfile. Field "{key}" is not valid base64url.',
   keyfileNoPrivateKey: "This keyfile has no private key.",
+  keyfileUnsupportedSize: "Only 4096-bit Arweave keys are supported.",
   keyfileDownloadsUnavailable: "Keyfile downloads aren't available here.",
   keyfileNoneWatch: "This wallet is watch-only. Gleam has no keyfile for it.",
   keyfileNoneHardware: "This wallet's key stays on its device. There's no keyfile to export.",
