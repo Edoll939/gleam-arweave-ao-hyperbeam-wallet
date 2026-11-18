@@ -4,7 +4,7 @@ import { Beam } from "@gleam/ui/src/primitives/beam.tsx";
 import { useBackHandler } from "@gleam/ui/src/primitives/back-stack.tsx";
 import { usePlatform } from "../../../app-platform/context";
 import type { DappBrowserFrame } from "../../../app-platform/types";
-import { resolveInput, knownSite, BUILT_IN_SITES, siteHost } from "./address";
+import { resolveInput, knownSite, BUILT_IN_SITES, pageTrail, siteHost } from "./address";
 import { useT } from "../../../i18n";
 import { StartScreen } from "./StartScreen";
 import { useBrowserSites } from "./useBrowserSites";
@@ -83,6 +83,7 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
   const currentUrl = nav?.url ?? page?.url ?? null;
   const origin = currentUrl ? originOf(currentUrl) : null;
   const host = currentUrl ? siteHost(currentUrl) : null;
+  const trail = currentUrl ? pageTrail(currentUrl) : [];
   const saved = origin !== null && sites.saved.includes(origin);
   const grant = origin === null ? undefined : grants.find((candidate) => candidate.origin === origin);
 
@@ -305,7 +306,13 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
                 {t("browser.notSecure")}
               </span>
             ) : null}
-            <span className="truncate">{host?.host ?? ""}</span>
+            {/* The host is what to trust, so the path gives way first. */}
+            <span className="max-w-full flex-shrink-0 truncate">{host?.host ?? ""}</span>
+            {trail.length > 0 ? (
+              <span aria-hidden="true" className="min-w-0 truncate text-label text-muted">
+                {trail.map((segment) => `› ${segment}`).join(" ")}
+              </span>
+            ) : null}
           </button>
         )}
       </div>

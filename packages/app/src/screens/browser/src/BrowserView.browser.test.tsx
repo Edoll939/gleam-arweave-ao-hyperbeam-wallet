@@ -209,6 +209,19 @@ describe("BrowserView with a page", () => {
     expect(screen.getByText("Not secure")).toBeTruthy();
   });
 
+  it("shows where on the site the page is after the host", async () => {
+    const browser = fakeBrowser();
+    mount({ browser: browser.port, initialUrl: "https://www.permatell.xyz/" });
+    await browser.emit({
+      kind: "navigation",
+      url: "https://www.permatell.xyz/pomp/claim/72mVqAhoivaMzHOEVNRo6Kisy8avXCsjJJpitpM5mVQ",
+      canGoBack: false,
+      loading: false,
+    });
+    expect(screen.getByText("www.permatell.xyz")).toBeTruthy();
+    expect(screen.getByText("› pomp › claim › …")).toBeTruthy();
+  });
+
   it("records the origin as a recent site and saves it with the star", async () => {
     const browser = fakeBrowser();
     const { runtime, send } = fakeRuntime();
