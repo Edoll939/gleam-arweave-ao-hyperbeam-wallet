@@ -372,7 +372,6 @@ describe("site scan lib: the points API", () => {
       ["Critical", "500"],
       ["High", "250"],
       ["Medium", "100"],
-      ["Low", "20"],
     ]);
     expect(bountyTiers("123456789012345678901234567890")[0]!.amountAtomic).toBe("61728394506172839450617283945");
     expect(bountyTiers(null).every((tier) => tier.amountAtomic === null)).toBe(true);
@@ -478,7 +477,7 @@ describe("site scan lib: small helpers", () => {
 
   it("keeps the prompt as SCANS.md has it", () => {
     expect(AGENT_LINE).toBe(
-      "Scan the latest Gleam release for security issues by following security/scan/SKILL.md in https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet. The skill clones the repo, installs its pnpm dependencies (which add a lefthook git hook to the checkout), runs its tests and osv-scanner, and calls the Gleam Points API at api.gleamwallet.app. It never needs a seed phrase, a real key, a wallet or funds. Ask me before any gh action: forking, pushing, opening a PR or filing an advisory.",
+      "Scan the latest Gleam release for security issues by following security/scan/SKILL.md in https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet. The skill clones the repo, installs its pnpm dependencies (which add a lefthook git hook to the checkout), runs its tests and osv-scanner, and calls the Gleam Points API at api.gleamwallet.app. It never needs a seed phrase, a real key, a wallet or funds. Ask me before filing an advisory.",
     );
   });
 });

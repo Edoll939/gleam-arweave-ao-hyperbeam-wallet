@@ -110,15 +110,13 @@ link, already holds at another layer, edge case not worth the code), then
 
 ## 7. Awards
 
-A merged PR that improves security and carries an `Attestation id:` earns
-a Low share (2%). If it fixes a real low finding, not only hardening, it
-also earns the fix bonus (`--severity fix`, same `--ref`, 1%). A
-docs-only or skill-wording PR earns none. List the
-proposed awards (PR, attestation id, severity) for Will. Once he approves
-the list, run them as `CLAUDE.local.md` says: preview with `n`, check the
-wallet, then `--yes` with `--ref <PR url>`.
+A PR earns nothing (`SCANS.md` § Points): nothing below Medium is paid,
+and a Medium-or-above fix comes as a patch in its advisory. Merge a
+useful PR on its merits, unpaid. A PR that holds the details of a
+Medium-or-above finding is closed, and the finding is asked for as a
+private advisory.
 
 ## 8. Report
 
 End with one line per PR: merged, closed (reason), or held for Will
-(why), plus the award list.
+(why).

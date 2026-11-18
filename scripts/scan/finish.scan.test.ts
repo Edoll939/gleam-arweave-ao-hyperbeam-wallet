@@ -15,6 +15,7 @@ import {
   fakeApi,
   fakeGit,
   finishedAttestation,
+  goodAdvisory,
   goodAttestation,
   idOf,
   json,
@@ -79,7 +80,7 @@ describe("pnpm scan finish: local checks", () => {
 
   it("surfaces shape issues and invisible characters", async () => {
     const out = await lines(setup(goodAttestation({ result: "maybe", extra: 1 })));
-    expect(out).toContain('✗ result: result must be "pass" if you filed nothing, or "scanned" if you filed a PR or an advisory.');
+    expect(out).toContain('✗ result: result must be "pass" if you filed nothing, or "scanned" if you filed an advisory.');
     expect(out).toContain("✗ extra: extra isn't part of the attestation format; remove it.");
     expect(await lines(setup(goodAttestation({ report: "Checked the vault.​" })))).toContain(
       "✗ report: report contains an invisible character (U+00AD, U+200B–U+200D, U+2060, U+FEFF or a tag character U+E0000–U+E007F); remove it.",
@@ -181,15 +182,15 @@ describe("pnpm scan finish: the round offer", () => {
 
   it("counts the waiting rounds and their reports, and numbers rounds after the signed ones", async () => {
     const deps = makeDeps();
-    writeRound(deps, "keys", { attestation: finishedAttestation("keys"), finished: true, startedAt: 1, files: { "pr-1.md": "x", "advisory-1.md": "Title: A site can read balances\nShort." } });
-    writeRound(deps, "signing", { attestation: goodAttestation({}, "signing"), startedAt: 2, files: { "pr-1.md": "x" } });
+    writeRound(deps, "keys", { attestation: finishedAttestation("keys"), finished: true, startedAt: 1, files: { "advisory-1.md": goodAdvisory(), "advisory-2.md": goodAdvisory() } });
+    writeRound(deps, "signing", { attestation: goodAttestation({}, "signing"), startedAt: 2, files: { "advisory-1.md": goodAdvisory() } });
     expect(closing(render(await runFinish(deps), false))).toBe(
       'Round 2 (Signing) is ready. 2 rounds and 3 reports are waiting to be signed. Round 3 earns 14.88 points even with no findings, and nobody has examined 97 of the 137 functions in Trust boundary yet. Reply "next" to scan it, or "file" to sign and file everything.',
     );
 
     // A round signed earlier (here, the wallet's third) moves the numbering on, and a filed report no longer waits.
     writeRound(deps, "keys", { signed: { attestationId: "a".repeat(64), round: 3, points: "1" }, files: { "filed.txt": "pr-1.md https://x\n" } });
-    writeRound(deps, "signing", { files: { "filed.txt": "pr-1.md https://github.com/x/pull/1\n" } });
+    writeRound(deps, "signing", { files: { "filed.txt": "advisory-1.md https://github.com/x/security/advisories/GHSA-1\n" } });
     expect(closing(render(await runFinish(deps), false))).toBe(
       'Round 4 (Signing) is ready. 1 round is waiting to be signed. Round 5 earns 17.36 points even with no findings, and nobody has examined 97 of the 137 functions in Trust boundary yet. Reply "next" to scan it, or "file" to sign and file everything.',
     );
@@ -239,7 +240,7 @@ describe("pnpm scan finish: the round offer", () => {
   it("warns about a long advisory draft above the closing message, without failing", async () => {
     const deps = setup(goodAttestation({ result: "scanned" }));
     const wordy = Array.from({ length: 30 }, () => "The page signs a tag the user never saw.").join(" ");
-    writeRound(deps, "keys", { files: { "advisory-1.md": `Title: A site can steal funds\n${wordy}` } });
+    writeRound(deps, "keys", { files: { "advisory-1.md": goodAdvisory("A site can steal funds").replace("Short.", wordy) } });
     const outcome = await runFinish(deps);
     expect(outcome.ok).toBe(true);
     const out = render(outcome, false).split("\n");

@@ -308,6 +308,7 @@
 
 .areas-block { margin-top: 40px; }
 .areas-block h3 { margin-top: 0; }
+.sc-section details h3 { margin: 20px 0 10px; }
 .areas { width: 100%; max-width: 520px; border-collapse: collapse; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
 .areas th, .areas td { padding: 7px 16px 7px 0; text-align: left; vertical-align: top; }
 .areas tr > :last-child { padding-right: 0; }

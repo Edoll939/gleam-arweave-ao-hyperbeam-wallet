@@ -15,7 +15,7 @@ professional audit.
    side effect up front, so the agent can check the skill against it
    before running anything:
 
-   > Scan the latest Gleam release for security issues by following security/scan/SKILL.md in https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet. The skill clones the repo, installs its pnpm dependencies (which add a lefthook git hook to the checkout), runs its tests and osv-scanner, and calls the Gleam Points API at api.gleamwallet.app. It never needs a seed phrase, a real key, a wallet or funds. Ask me before any gh action: forking, pushing, opening a PR or filing an advisory.
+   > Scan the latest Gleam release for security issues by following security/scan/SKILL.md in https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet. The skill clones the repo, installs its pnpm dependencies (which add a lefthook git hook to the checkout), runs its tests and osv-scanner, and calls the Gleam Points API at api.gleamwallet.app. It never needs a seed phrase, a real key, a wallet or funds. Ask me before filing an advisory.
 2. **The agent scans one area per round.** It checks out the latest
    release tag and runs `pnpm scan start`, which picks the least-covered
    area with no round in that checkout, or `pnpm scan start --area <id>`
@@ -26,18 +26,21 @@ professional audit.
    `security/scan/SKILL.md` from that checkout, reviewing the area's
    files first. Where it can start a subagent, each round's review runs
    in a fresh one.
-3. **The agent reports what it finds.** PRs are the default: low or
-   informational issues, hardening, and fixes to the skill. Medium and
-   above go in a private GitHub advisory. Each report has a short summary
-   on top and its detail folded under `<details>`
-   ([`REPORT.md`](security/scan/REPORT.md)).
+3. **The agent reports what it finds.** Only a finding rated Medium or
+   above is filed, as a private GitHub advisory. A Low finding is
+   dropped, and a scan files no PRs. Each advisory has a short summary on
+   top, the rating lines, and its detail and failing test folded under
+   `<details>` ([`REPORT.md`](security/scan/REPORT.md)).
 4. **The agent checks its own work.** `pnpm scan finish` reads the
    round's attestation, fills `release` and `commit` from git, runs the
    core checks locally, then sends the attestation to
    `POST /attestations/check`, which runs every server check that doesn't
    need your signature. Each failure prints one line,
    `✗ <field>: <what to change>`, and the agent fixes it before you see
-   anything. A draft advisory that runs long or reads hard gets a `!`
+   anything. It also fails an advisory draft that lacks a rating line or
+   the failing test, rates itself above what its own answers give, or
+   names a fix location that isn't a function at the tag, and any PR
+   draft. A draft advisory that runs long or reads hard gets a `!`
    warning, which never fails the run. `--json` prints the same result as
    one JSON object.
 5. **The agent offers another round.** On success `finish` prints the
@@ -52,7 +55,7 @@ professional audit.
    report of each round in turn. Approve each one, and the extension
    submits it. The agent never touches a key. Reply "signed".
 7. **The agent files and offers more.** `pnpm scan next` asks the server
-   which rounds you signed. The agent files the PRs and advisories of
+   which rounds you signed. The agent files the advisories of
    those rounds with their attestation ids and lists the links, then
    ends with the next round offer, or with the sign request again for a
    round still unsigned.
@@ -99,7 +102,7 @@ each release's challenges go to new and changed functions first.
 A session keeps each round in its own folder,
 `.gleam-scan/rounds/<area>/`: `challenge.json`, `attestation.json`,
 `area-files.txt`, `started-at`, the round's leads, candidate notes and
-`pr-*.md` / `advisory-*.md` drafts, `finished.json` once `finish` passes,
+`advisory-*.md` drafts, `finished.json` once `finish` passes,
 `signed.json` once the server has the signature, and `filed.txt`, the
 reports the agent filed. `.gleam-scan/current` names the round in
 progress, and `.gleam-scan/declines` counts the sign requests the user
@@ -157,9 +160,7 @@ count, how many of them are examined, and its scan count on the release.
 ```
 
 - `result` is `pass` if the agent reported nothing, and `scanned` if it
-  filed a fix PR, hardening PR or advisory. A skill or surface PR
-  doesn't count. It
-  never says what was found.
+  filed an advisory. It never says what was found.
 - `report` describes coverage, not vulnerabilities. Details of a
   medium-or-above issue go only in the advisory.
 - `model` is a self-reported label. It's shown on `review-results.html` and has no
@@ -174,8 +175,8 @@ its fragment as `<payload>`: base64url, without padding, of the UTF-8
 canonical JSON, so the page decodes it with plain JS (base64url, UTF-8,
 `JSON.parse`) and the fragment never reaches a server. Hardware wallets use the transaction
 proof. A dApp's `signMessage` is never involved, so the site needs no
-wallet connection. That sha256 is the **attestation id**. Every PR and
-advisory a scan files includes it, which links each finding to a
+wallet connection. That sha256 is the **attestation id**. Every advisory
+a scan files includes it, which links each finding to a
 wallet. The id only names the wallet: any attestation that wallet signed
 and that isn't voided can carry a finding, whichever round or release
 found it. A round's own id is the default, and a wallet that has used
@@ -271,17 +272,24 @@ does every model.
 holding points. An accepted finding takes a share of the pool's current
 balance:
 
-| Accepted as                       | Share |
-| --------------------------------- | ----: |
-| Critical                          |   50% |
-| High                              |   25% |
-| Medium                            |   10% |
-| Low, or a merged hardening PR     |    2% |
-| Bonus: a merged fix for a finding |   +1% |
+| Accepted as                               | Share |
+| ----------------------------------------- | ----: |
+| Critical                                  |   50% |
+| High                                      |   25% |
+| Medium                                    |   10% |
+| Bonus: a merged fix for a finding         |   +1% |
+| Bonus: the best finding of a review round |  +5% |
 
-A finding's fix earns the bonus when it merges largely as written: a fix
-PR for a low finding, or a patch in a medium-or-above advisory. A public
-PR for a medium-or-above finding earns no bonus.
+Nothing below Medium earns: no Low finding, hardening, test, docs or
+skill PR. The severity comes from the three questions in
+[SECURITY.md § Severity](SECURITY.md#severity), which every advisory
+answers in its rating lines and the maintainer answers the same way. A
+finding's fix earns the bonus when the patch in its advisory merges
+largely as written. A **review round** is one pass in which a maintainer
+rates the open reports. The highest-rated finding accepted in a review
+round earns the best-finding bonus; a tie goes to the one filed first. A
+review round with nothing accepted at Medium or above pays no
+best-finding bonus.
 
 The pool grows while nothing is found, so bounties rise over time.
 Only the first report of a root cause earns. A finding in the release
@@ -290,20 +298,33 @@ users run the release until the next one ships. The scan reports it as
 an advisory that says so, since there is no fix left to make. Points carry no promised
 value or conversion ratio.
 
+**Quality rules.** Three kinds of report lose the scan points of the
+attestation they quote:
+
+1. A report with an inflated severity rating: filed at Medium or above, and
+   confirmed Low or not reproduced.
+2. A repeat of an advisory that was published before it was filed.
+3. A report that only restates a By design entry, without showing the
+   harm its *Still a finding if* clause names (By design).
+ A High confirmed as Medium just earns the Medium share. A duplicate of a
+report that isn't published yet loses nothing, since its reporter
+couldn't have seen it.
+
 These are the current values. They are tuned per release.
 
 ## Reviewing findings
 
-- **PRs:** review and merge as usual; nothing merges automatically. A
-  PR that restates a By design entry is closed with a link to that
-  entry.
+- **PRs:** a scan files none, and a PR earns nothing. Review one like
+  any outside PR; nothing merges automatically.
 - **Advisories:** check for an `Attestation id:` line first. If it is
   missing or reads `none`, comment on the advisory asking for the id of
   any attestation the reporter's wallet has signed, while it is still in
   triage, since only the id links the finding to a wallet. Then reproduce the finding, set the real severity, fix it
   privately, ship the fix, and publish the advisory with credit to
   the reporter. Close duplicates, reports that don't reproduce, and
-  by-design reports with a one-line reason.
+  by-design reports with a one-line reason, and dock the ones the
+  Quality rules name. Group reports by their `Fix location:` line first: reports
+  naming one function are often one bug.
 - **Fix bonus:** once a reporter's fix merges, pay it with
   `--severity fix` and the finding's `--ref`.
 
@@ -312,12 +333,15 @@ To pay a finding, run the award script locally, as with `drop-code`:
 ```bash
 DATABASE_URL=… pnpm --filter @gleam/points-api scan-award --attestation <id> --severity high --ref <url>
 DATABASE_URL=… pnpm --filter @gleam/points-api scan-void --attestation <id>
+DATABASE_URL=… pnpm --filter @gleam/points-api scan-dock --attestation <id> --ref <url>
 ```
 
 `scan-award` shows the pool balance, the share and the amount, and asks
 for confirmation. It won't pay the same `--ref` twice. `scan-void`
 removes the points of an attestation that shows no real work and keeps
-any finding points. The server has no admin endpoint.
+any finding points. `scan-dock` removes an attestation's scan points but
+keeps the scan counted, since its coverage was real; it won't dock the
+same `--ref` twice. The server has no admin endpoint.
 
 ## By design
 
@@ -347,7 +371,7 @@ and the classes of bug that cut across them, and
 [`VERIFY.md`](security/scan/VERIFY.md), which a fresh subagent (or the
 scanning agent itself) follows to try to disprove one finding and rate
 what survives, and [`REPORT.md`](security/scan/REPORT.md), the shape and
-style of an advisory or PR body. In summary:
+style and rating lines of an advisory. In summary:
 
 1. Check out the latest release tag and run `pnpm scan start`, with
    `--area <id>` when the user names an area. It writes the round folder
@@ -355,7 +379,7 @@ style of an advisory or PR body. In summary:
    a starter attestation.
 2. Read `docs/THREAT_MODEL.md` first. Its attackers, out-of-scope list
    and By design entries are given. Where the docs and the code
-   disagree, the code is right; fix the docs in a PR.
+   disagree, the code is right.
 3. Run the tests and `osv-scanner`.
 4. Review the area's files that changed since the last release, then
    the rest of the area, following anything they reach, with
@@ -367,17 +391,15 @@ style of an advisory or PR body. In summary:
    run in a fresh subagent too (the skill's Round brief and Draft brief). Only findings that survive get
    drafted, at the severity the verdict gives. Each survivor is then
    checked against `origin/master`. One that master already fixes is
-   drafted as an advisory that says so, never as a fix PR.
-7. Draft the reports, as `REPORT.md` says. PRs are the default: low or
-   informational issues, hardening, and anything that would have made
-   the scan better (a missing surface file, a check the skill should
-   name, a command that misled). Every scan considers at least one PR
-   candidate, such as a fix, a test that pins a security property, a
-   `security/surface.txt` entry or a skill change, and drafts it if it is
-   real. A weak PR is closed and earns nothing. Medium and above go in a
-   private advisory, never a PR or a public issue, with the fix as a
-   patch inside it when the agent has one. File nothing yet,
-   since each one has to quote the attestation id.
+   drafted as an advisory that says so.
+7. Draft the reports, as `REPORT.md` says. Only Medium and above is
+   drafted, as a private advisory with its rating lines, its failing
+   test, and the fix as a patch inside it when the agent has one. A Low
+   finding is dropped, and no PR is drafted. Before drafting, the agent
+   checks each finding against the published advisories and drops one
+   they already cover. If the user asks for a higher rating than the
+   answers give, the agent says no and why. File nothing yet, since each
+   advisory has to quote the attestation id.
 8. Answer the challenge from the code you read by filling in the
    round's `attestation.json`. Run `pnpm scan finish` until it passes,
    and end the turn with the round offer it prints. From then on, every
@@ -385,7 +407,7 @@ style of an advisory or PR body. In summary:
    word, with nothing after it. On "next", run `pnpm scan start` and
    repeat from step 4. On "file", run `pnpm scan file` and end with its
    sign request. On "signed", run `pnpm scan next`, file the signed
-   rounds' drafts with their attestation ids, and list one link per line
+   rounds' advisories with their attestation ids, and list one link per line
    above `next`'s closing message.
 
 **Report like a working security engineer:**
@@ -394,14 +416,15 @@ style of an advisory or PR body. In summary:
   concrete steps from the attacker's access to the harm. An attack that
   needs a compromised OS, malware, or the user's password is out of
   scope.
-- Rate severity with the anchors in `VERIFY.md`: by what was shown, not
-  the worst case you can imagine.
+- Rate severity with the three questions in `SECURITY.md` § Severity:
+  by what was shown, not the worst case you can imagine.
 - Missing defence in depth is not a finding unless it enables a real
   attack.
 - Say once whether a finding was demonstrated, traced or needs a
   browser check, then write plainly.
-- Above `<details>`, put only the title and a plain summary of about
-  100 words at reading grade 6 to 7. Everything else goes inside it.
+- Above `<details>`, put only the title, a plain summary of about 100
+  words at reading grade 6 to 7, and the rating lines. Everything else
+  goes inside it.
 - A clean `pass` earns the same as `scanned`. Padding a report with
   weak findings earns nothing.
 

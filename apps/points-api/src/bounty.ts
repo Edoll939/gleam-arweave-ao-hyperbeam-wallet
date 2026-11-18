@@ -1,8 +1,12 @@
 import { parseArgs } from "node:util";
 import type { Db, Queryable } from "./db";
 
-/** `fix` is the bonus for a finding's fix that was merged, paid apart from the finding itself. */
-export const SEVERITIES = ["critical", "high", "medium", "low", "fix"] as const;
+/**
+ * Nothing below medium is paid (SCANS.md § Points). `fix` is the bonus for a
+ * finding's merged fix and `best` the bonus for a release's best finding,
+ * each paid apart from the finding itself.
+ */
+export const SEVERITIES = ["critical", "high", "medium", "fix", "best"] as const;
 export type Severity = (typeof SEVERITIES)[number];
 
 /** Percent of the pool's balance a finding takes (SCANS.md § Points). */
@@ -10,8 +14,8 @@ export const SEVERITY_SHARE_PERCENT: Record<Severity, bigint> = {
   critical: 50n,
   high: 25n,
   medium: 10n,
-  low: 2n,
   fix: 1n,
+  best: 5n,
 };
 
 const DECIMALS = 12;
@@ -39,6 +43,12 @@ export interface VoidOptions {
   yes: boolean;
 }
 
+export interface DockOptions {
+  attestation: string;
+  ref: string;
+  yes: boolean;
+}
+
 function attestationArg(value: string | undefined): string {
   if (!value || !/^[0-9a-f]{64}$/.test(value)) {
     throw new Error("--attestation must be the attestation id, 64 lowercase hex characters.");
@@ -59,14 +69,14 @@ export function parseAwardArgs(argv: string[]): AwardOptions {
   });
   const attestation = attestationArg(values.attestation);
   if (!values.severity || !(SEVERITIES as readonly string[]).includes(values.severity)) {
-    throw new Error("--severity must be one of critical, high, medium, low or fix.");
+    throw new Error("--severity must be one of critical, high, medium, fix or best.");
   }
   let ref: string | undefined;
   try {
     const url = new URL(values.ref ?? "");
-    // The finding was already paid against its plain ref, so the fix bonus
-    // is recorded under its own and can be paid once too.
-    if (values.severity === "fix") url.hash = "fix";
+    // The finding was already paid against its plain ref, so each bonus is
+    // recorded under its own and can be paid once too.
+    if (values.severity === "fix" || values.severity === "best") url.hash = values.severity;
     if (url.protocol === "https:") ref = url.toString();
   } catch {
     // falls through to the error below
@@ -82,6 +92,24 @@ export function parseVoidArgs(argv: string[]): VoidOptions {
     strict: true,
   });
   return { attestation: attestationArg(values.attestation), yes: values.yes ?? false };
+}
+
+export function parseDockArgs(argv: string[]): DockOptions {
+  const { values } = parseArgs({
+    args: argv,
+    options: { attestation: { type: "string" }, ref: { type: "string" }, yes: { type: "boolean" } },
+    strict: true,
+  });
+  const attestation = attestationArg(values.attestation);
+  let ref: string | undefined;
+  try {
+    const url = new URL(values.ref ?? "");
+    if (url.protocol === "https:") ref = url.toString();
+  } catch {
+    // falls through to the error below
+  }
+  if (!ref) throw new Error("--ref must be the https URL of the closed advisory or PR.");
+  return { attestation, ref, yes: values.yes ?? false };
 }
 
 /** Asks a yes/no question; the CLI wraps readline, tests pass a stub. */
@@ -204,7 +232,7 @@ export async function voidAttestation(
 ): Promise<VoidResult> {
   const attestation = await readAttestation(db, options.attestation);
   if (attestation.voided_at) throw new Error(`That attestation was already voided on ${attestation.voided_at.toISOString()}.`);
-  const scan = await sumPoints(db, attestation.id, "scan");
+  const scan = (await sumPoints(db, attestation.id, "scan")) + (await sumPoints(db, attestation.id, "dock"));
   const finding = await sumPoints(db, attestation.id, "finding");
 
   print(`Attestation:   release ${attestation.release}, model ${attestation.model ?? "unknown"}`);
@@ -221,16 +249,68 @@ export async function voidAttestation(
   const removed = await db.transaction(async (tx) => {
     const current = await readAttestation(tx, options.attestation, true);
     if (current.voided_at) throw new Error("That attestation was voided while you confirmed.");
-    const amount = await sumPoints(tx, current.id, "scan");
+    const amount = (await sumPoints(tx, current.id, "scan")) + (await sumPoints(tx, current.id, "dock"));
     await tx.query("UPDATE attestations SET voided_at = $2 WHERE id = $1", [current.id, new Date()]);
-    await tx.query("DELETE FROM scan_points WHERE attestation_id = $1 AND kind = 'scan'", [current.id]);
+    // A dock's negative row goes with the points it took back, or the void would take them twice.
+    await tx.query("DELETE FROM scan_points WHERE attestation_id = $1 AND kind IN ('scan', 'dock')", [current.id]);
     return amount;
   });
   print(`Voided. Removed ${withAtomic(removed)}.`);
   return { voided: true, removed };
 }
 
-async function sumPoints(db: Queryable, attestationId: string, kind: "scan" | "finding"): Promise<bigint> {
+export interface DockResult {
+  docked: boolean;
+  removed: bigint;
+}
+
+/**
+ * Takes back an attestation's scan points for a report closed as inflated,
+ * invalid or a duplicate of a published one. Unlike a void, the scan stays
+ * counted: its coverage was real work and its paid place stays taken.
+ */
+export async function dockAttestation(
+  db: Db,
+  options: DockOptions,
+  confirm: Confirm,
+  print: (line: string) => void,
+): Promise<DockResult> {
+  const attestation = await readAttestation(db, options.attestation);
+  const amount = await dockable(db, options);
+
+  print(`Attestation:   release ${attestation.release}, model ${attestation.model ?? "unknown"}`);
+  print(`Wallet:        ${attestation.address}`);
+  print(`Ref:           ${options.ref}`);
+  print(`Scan points removed:  ${withAtomic(amount)}`);
+
+  if (!options.yes && !(await confirm(`Dock ${formatPoints(amount)} points from ${attestation.address}? [y/N] `))) {
+    print("Cancelled. Nothing was written.");
+    return { docked: false, removed: 0n };
+  }
+
+  const removed = await db.transaction(async (tx) => {
+    const current = await readAttestation(tx, options.attestation, true);
+    const now = await dockable(tx, options);
+    await tx.query(
+      "INSERT INTO scan_points (address, attestation_id, kind, amount_atomic, ref, created_at) VALUES ($1, $2, 'dock', $3, $4, $5)",
+      [current.address, current.id, (-now).toString(), options.ref, new Date()],
+    );
+    return now;
+  });
+  print(`Docked. Removed ${withAtomic(removed)}.`);
+  return { docked: true, removed };
+}
+
+/** What a dock would remove: the scan points left after earlier docks. */
+async function dockable(db: Queryable, options: DockOptions): Promise<bigint> {
+  const used = await db.query("SELECT 1 FROM scan_points WHERE ref = $1 UNION ALL SELECT 1 FROM bounty_pool WHERE ref = $1", [options.ref]);
+  if (used.rows.length > 0) throw new Error(`The ref ${options.ref} has already been paid or docked.`);
+  const left = (await sumPoints(db, options.attestation, "scan")) + (await sumPoints(db, options.attestation, "dock"));
+  if (left <= 0n) throw new Error("That attestation has no scan points left to dock.");
+  return left;
+}
+
+async function sumPoints(db: Queryable, attestationId: string, kind: "scan" | "finding" | "dock"): Promise<bigint> {
   const { rows } = await db.query<{ total: string }>(
     "SELECT coalesce(sum(amount_atomic), 0)::text AS total FROM scan_points WHERE attestation_id = $1 AND kind = $2",
     [attestationId, kind],

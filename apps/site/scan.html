@@ -219,23 +219,25 @@
                     <th scope="row">Medium</th>
                     <td class="num">10%</td>
                   </tr>
-                  <tr>
-                    <th scope="row">Low</th>
-                    <td class="num">2%</td>
-                  </tr>
                 </tbody>
               </table>
             </li>
-            <li>A fix we merge for a confirmed vulnerability adds 1% of the pool.</li>
+            <li>Lower severities and pull requests aren't rewarded.</li>
+            <li>A fix we merge for a confirmed vulnerability earns an extra 1% of the pool.</li>
+            <li>The best finding of each review round earns an extra 5% of the pool.</li>
             <li>A maintainer sets the severity using the
               <a href="https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet/blob/master/SECURITY.md#severity"
                 target="_blank" rel="noopener">criteria in our security policy</a>.
             </li>
             <li>Only the first report of each vulnerability is awarded a share.</li>
-            <li>Small issues may go through a public pull request while high risk goes
-              through a private advisory.</li>
             <li>Unclaimed balances stays in the pool.</li>
           </ul>
+          <h3>Quality rules</h3>
+          <ol class="sc-prose">
+            <li>A report with an inflated severity rating loses its scan reward.</li>
+            <li>A repeat of a published advisory loses its scan reward.</li>
+            <li>A report that only restates one of our by-design decisions loses its scan reward.</li>
+          </ol>
         </details>
       </div>
     </section>

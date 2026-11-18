@@ -288,4 +288,5 @@ It prints about 50 lines.
 Each surface file has tests next to it (`foo.ts` → `foo.*.test.ts`).
 Compare the cases they cover with the ones they don't. An input shape,
 error path or ordering with no test is a good place to write your own
-throwaway test (Step 5 of `SKILL.md`).
+test (Step 5 of `SKILL.md`). A test that passes is not a finding, and
+scans file no test PRs.

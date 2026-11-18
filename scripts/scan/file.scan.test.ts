@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { decodeAttestationPayload, type ScanAreaId } from "../../packages/core/src/scan/index.ts";
 import { main, render } from "./cli.ts";
 import { runFile } from "./file.ts";
-import { acceptCheck, exists, fakeApi, finishedAttestation, goodAttestation, idOf, json, makeDeps, put, readJsonFile, writeRound } from "./harness.ts";
+import { acceptCheck, exists, fakeApi, finishedAttestation, goodAdvisory, goodAttestation, idOf, json, makeDeps, put, readJsonFile, writeRound } from "./harness.ts";
 import type { NextResponse } from "./next.ts";
 import { CLOSING_HEADER, type Deps } from "./shared.ts";
 
@@ -16,8 +16,8 @@ async function waitingRound(deps: Deps, area: ScanAreaId, startedAt: number, fil
 describe("pnpm scan file", () => {
   it("re-checks every waiting round and ends with one link that signs them in round order", async () => {
     const deps = makeDeps();
-    const keys = await waitingRound(deps, "keys", 1, { "pr-1.md": "x" });
-    const boundary = await waitingRound(deps, "boundary", 2, { "advisory-1.md": "Title: A site can read balances\nShort.", "pr-1.md": "y", "pr-2.md": "z" });
+    const keys = await waitingRound(deps, "keys", 1, { "advisory-1.md": goodAdvisory() });
+    const boundary = await waitingRound(deps, "boundary", 2, { "advisory-1.md": goodAdvisory(), "advisory-2.md": goodAdvisory(), "advisory-3.md": goodAdvisory() });
     writeRound(deps, "signing", { attestation: goodAttestation({}, "signing"), startedAt: 3 });
     const calls: string[] = [];
     deps.fetchImpl = fakeApi({}, calls);
@@ -34,7 +34,7 @@ describe("pnpm scan file", () => {
       "2 rounds are ready to sign, with 4 reports to file.",
       "",
       `1. Open this link and sign each round in Gleam: ${link}`,
-      '2. Reply "signed" and I\'ll file the reports: fork, push, open each PR and file each advisory.',
+      '2. Reply "signed" and I\'ll file the reports: file each advisory as a private report on GitHub.',
     ]);
     const payloads = link.split("#")[1]!.split(".");
     expect(payloads).toHaveLength(2);

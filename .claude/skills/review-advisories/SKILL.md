@@ -20,6 +20,10 @@ Also list `state=draft` for accepted reports that are not yet published.
 
 ## 1. Triage each report
 
+First group the open reports by their `Fix location:` line. Reports that
+name one function are often one bug: triage the earliest of the group in
+full, then check each later one against it.
+
 1. **Attestation id.** Look for `Attestation id: <64 hex>` in the
    description, then in the comments. The id only links the finding to
    a wallet: any non-voided attestation the reporter's wallet signed is
@@ -34,16 +38,26 @@ Also list `state=draft` for accepted reports that are not yet published.
    not, it is still valid. Rate it on its merits, credit and pay the
    reporter, and note "fixed on master in #N before this report".
 4. **Duplicate?** Only the first report of a root cause earns. Close a
-   later one with a link to the first.
+   later one with a link to the first. If the first was already
+   published when the later one was filed, dock the later one (§ 4).
 5. **By design?** Check `docs/THREAT_MODEL.md` § By design and the entry's
    *Still a finding if* clause. If the report doesn't show that harm,
-   close it with a one-line reason and the link.
-6. **Rate** with `SECURITY.md` § Severity, by what was shown, not the
-   worst case. Out of scope: anything that needs a compromised OS,
+   close it with a one-line reason and the link, and dock it (§ 4).
+6. **Rate** with the three questions in `SECURITY.md` § Severity, by
+   what was shown, not the worst case. Answer Attacker, Loss and
+   Requires yourself, from your reproduction, then read the severity off
+   the table. Don't start from the reporter's rating lines; compare them
+   afterwards. Out of scope: anything that needs a compromised OS,
    malware or the user's password. Missing defence in depth alone is
-   Informational. You are the final arbiter of the rating. Never take
-   the reporter's rating as given, and never ask Will to accept a
-   rating. Set it yourself, apply it, and give a one-line reason.
+   `none`, so Low. You are the final arbiter of the rating. Never ask
+   Will to accept a rating. Set it yourself, apply it, and give a
+   one-line reason that names your three answers.
+7. **Dock?** Dock the report (§ 4) when it was filed at Medium or above
+   and you rate it Low or it doesn't reproduce, when it duplicates an
+   advisory published before it was filed, or when it only restates a
+   By design entry. A High you rate Medium is not
+   docked: it earns the Medium share. A duplicate of an unpublished
+   report is not docked.
 
 To close one: `gh api -X PATCH "$API/<GHSA>" -f state=closed`, after a
 comment with the reason. To accept one: set the real severity and
@@ -93,14 +107,14 @@ Then `gh api -X PATCH "$API/<GHSA>" -f state=published`.
 
 ## 4. Pay
 
-Pay advisories that carry an attestation id. List any valid one without
+Nothing below Medium is paid. Pay advisories that carry an attestation id. List any valid one without
 an id for Will with your view of its value. Give Will the list
 (GHSA, attestation id, severity) and wait for his approval. Then, from
 `apps/points-api`, preview each award with `n`:
 
 ```bash
 echo n | pnpm exec tsx --env-file=local.env scripts/scan-award.ts \
-  --attestation <id> --severity <low|medium|high|critical> \
+  --attestation <id> --severity <medium|high|critical> \
   --ref https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet/security/advisories/<GHSA>
 ```
 
@@ -113,7 +127,25 @@ advisory's `--ref`. The script records it under `<ref>#fix`, so it pays
 once beside the finding. Credit the reporter as the commit's author. Each payment shrinks the pool, so later shares come out
 smaller. The script won't pay the same `--ref` twice.
 
+**Best finding.** Each run of this skill is one review round. Of the
+findings accepted in it, the highest-rated earns the best-finding bonus
+(a tie goes to the one filed first). If it is Medium or above, pay it
+`--severity best` with its advisory's `--ref`; the script records it
+under `<ref>#best`. List it with the other awards for Will's approval.
+
+**Dock.** For each report § 1 says to dock, close it with its reason,
+then preview and run, with the closed report's link:
+
+```bash
+echo n | pnpm exec tsx --env-file=local.env scripts/scan-dock.ts \
+  --attestation <id> --ref https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet/security/advisories/<GHSA>
+```
+
+It removes the scan points of the attestation the report quotes and
+keeps its coverage. List docks with the awards for Will's approval.
+
 ## 5. Report
 
 End with one line per advisory: accepted (severity, fix PR), closed
-(reason), published, or waiting (on what), followed by the awards paid.
+(reason, docked or not), published, or waiting (on what), followed by
+the awards paid and the docks.

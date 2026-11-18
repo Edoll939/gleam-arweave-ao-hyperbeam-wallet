@@ -15,13 +15,19 @@ Use [GitHub's private vulnerability reporting](https://github.com/skyf0xx/gleam-
 for this repository (Security tab → Report a vulnerability). This opens a
 private draft advisory visible only to maintainers until a fix ships.
 
-Include, where relevant:
+Include:
 
-- The affected file(s) or flow (e.g. key derivation, signing, approval
-  window).
-- Steps to reproduce, or a PoC.
-- Impact — what an attacker could do (e.g. key exfiltration, signing without
-  approval, draining funds).
+- Steps to reproduce, and a failing test where you can write one.
+- The answers to the three questions under Severity, and the function a
+  fix has to change, as lines of their own:
+
+  ```text
+  Severity: high
+  Attacker: Malicious website
+  Loss: mismatch
+  Requires: one-click
+  Fix location: packages/core/src/ao/other-tags.ts#otherTags
+  ```
 
 If you have signed a [community scan](SCANS.md), include its
 attestation id as a line of its own, `Attestation id: <64 hex characters>`,
@@ -32,23 +38,44 @@ that found the issue.
 ## Severity
 
 A maintainer sets the severity of each confirmed report by what was
-shown under realistic conditions, not the worst case imaginable.
+shown under realistic conditions, not the worst case imaginable. Every
+report answers three questions, and the answers set the severity.
 
-- **Critical**: a malicious website or network attacker, with nothing
-  from the user beyond ordinary use, gets the key or a signature or
-  transfer the user never approved, on default settings.
-- **High**: a named control is fully defeated with real consequences.
-  For example: the approval preview shows a different transaction from
-  the one signed; a signature needs only one plausible click on a
-  misleading prompt; the key reaches a page, a log or
-  `chrome.storage.local`; the wallet stays unlocked after auto-lock.
-- **Medium**: a real boundary violation with a limited blast radius or
-  uncommon preconditions. For example: a page learns the address without
-  a connect approval; the preview hides a material field only for an
-  unusual transaction shape.
-- **Low**: disclosure of non-secret internals, an effect that takes
-  sustained effort for little gain, or a docs mismatch.
-- **Informational**: true, but with minimal impact on its own.
+1. **Attacker:** who does it. One row of
+   [THREAT_MODEL.md § Attackers](docs/THREAT_MODEL.md#attackers), such as
+   a malicious website or someone at an unlocked browser.
+2. **Loss:** what the user loses. Pick one:
+   - `key`: the private key or the vault password leaves the wallet.
+   - `unapproved`: a signature or transfer the user never approved.
+   - `mismatch`: the user approves one thing and signs another. The
+     preview shows a different recipient, amount, asset or authority
+     from the one signed, or leaves one out. A value shown correctly but
+     easy to misread, such as a lookalike name or a truncated one whose
+     full value is a click away, is `none`.
+   - `control`: a control the user set stops holding, such as a revoked
+     site, the auto-lock or a passkey removal.
+   - `disclosure`: a site learns an address or other data without the
+     user's consent.
+   - `lockout`: the wallet can't sign or unlock until the user acts.
+   - `none`: none of these.
+3. **Requires:** what has to happen beyond ordinary use.
+   - `none`: nothing.
+   - `one-click`: one approval of a prompt that doesn't look wrong.
+   - `unusual`: an action or setting few users have, or a condition the
+     attacker doesn't control, such as a race or a browser restart. The
+     shape of a request is not unusual: a malicious site sends any shape
+     it likes.
+
+| Loss | Requires none | one-click | unusual |
+| --- | --- | --- | --- |
+| `key`, `unapproved` | Critical | High | Medium |
+| `mismatch`, `control` | High | High | Medium |
+| `disclosure`, `lockout` | Medium | Medium | Low |
+| `none` | Low | Low | Low |
+
+Only Medium and above earns a share of the bounty pool
+([SCANS.md § Points](SCANS.md#points)). A docs mismatch, missing
+defence in depth, or disclosure of non-secret internals is `none`.
 
 ## Scope
 

@@ -238,7 +238,7 @@ export function signRequest(input: { rounds: number; link: string; unfiled: numb
   const reply =
     unfiled > 0
       ? // Names each gh action, so this one question is the "ask me before any gh action" the scan prompt requires.
-        `2. Reply "signed" and I'll file ${unfiled === 1 ? "the report" : "the reports"}: fork, push, open each PR and file each advisory.`
+        `2. Reply "signed" and I'll file ${unfiled === 1 ? "the report" : "the reports"}: file each advisory as a private report on GitHub.`
       : filed > 0
         ? `2. Reply "signed" and I'll add the attestation ${rounds === 1 ? "id" : "ids"} to the filed ${filed === 1 ? "report" : "reports"}.`
         : `2. Reply "signed" when you're done.`;

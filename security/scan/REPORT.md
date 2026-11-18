@@ -1,4 +1,4 @@
-# Write an advisory or PR body
+# Write an advisory
 
 A maintainer reads your report first in a list of many. The title and
 summary tell them in one minute what it is and how bad it is, in plain
@@ -54,6 +54,7 @@ A maintainer sees only the title and the summary. Everything else goes in
   it, a trace shows it or it needs a browser check. If master already
   fixes it, end with `Already fixed on master in <ref>.`
 - `Attestation id: {{ATTESTATION_ID}}`
+- The rating lines (below).
 - A `<details><summary>Details</summary>` block, written for an agent:
   - **Impact**: who is affected, what they lose, the severity and why;
   - **Steps**: numbered, from the attacker's access to the harm;
@@ -62,9 +63,37 @@ A maintainer sees only the title and the summary. Everything else goes in
   - the six-field table from `VERIFY.md` (Attacker, Entry, Control,
     Boundary, Harm, Evidence);
   - the `file:line` trace;
-  - any test code;
+  - the failing test, as a ```` ```ts ```` block: a Vitest `it(…)` that
+    fails at the release tag and shows the loss;
   - at most one line on why it isn't a duplicate of a named earlier
     advisory.
+
+## Rating lines
+
+Under the attestation id, one line each. They answer the three questions
+in [SECURITY.md § Severity](../../SECURITY.md#severity), and the
+maintainer answers the same three:
+
+```text
+Severity: medium | high | critical
+Attacker: <a row of docs/THREAT_MODEL.md § Attackers, word for word>
+Loss: key | unapproved | mismatch | control | disclosure | lockout
+Requires: none | one-click | unusual
+Fix location: <file>#<function>
+```
+
+- **Severity** is what the SECURITY.md table gives for your Loss and
+  Requires, never more. If you're unsure between two answers, pick the
+  one your test shows.
+- **Fix location** is the function a fix has to change, not where the
+  symptom shows. Two reports of one bug usually name the same function,
+  which is how a maintainer groups them. Write it as the file at the tag
+  and the function name, or `Class.method`.
+
+A report rated above what its own answers and test show, a repeat of a
+published advisory, and a report that only restates a By design entry
+each lose the scan points of the attestation
+they quote (SCANS.md § Quality rules).
 
 ## Style
 
@@ -86,6 +115,12 @@ characters or with a check id, code name or parenthetical, more than 120
 words above `<details>`, or a reading grade above 8. The warning never
 fails the scan. Fix the draft and move on.
 
+They fail the run, with a `✗` line naming the fix, when an advisory
+draft is missing a rating line or the failing test, rates itself above
+what its Loss and Requires give, rates itself Low, names an attacker the
+threat model doesn't list, or names a fix location that isn't a function
+at the tag, and when the round folder holds a `pr-*.md` draft.
+
 ## Example advisory
 
 This example is invented. It shows the shape, not a real bug.
@@ -96,17 +131,22 @@ Title: A connected site can get a signature on an action the user never sees
 **Summary**: The approval window shows only the first 16 tags of a
 request. A site can put an extra tag after them. The user can't see it,
 but Gleam signs it. So a site can slip in an action the user would
-refuse, like a token send. The user still has to click Approve, so this
-is Medium. A unit test shows it.
+refuse, like a token send. The user approves what looks like a normal
+request, so this is High. A unit test shows it.
 
 Attestation id: {{ATTESTATION_ID}}
+Severity: high
+Attacker: Malicious website
+Loss: mismatch
+Requires: one-click
+Fix location: packages/app/src/approval/TagList.tsx#TagList
 
 <details><summary>Details</summary>
 
 **Impact**: Any user who approves a `signDataItem` request from a hostile
 page. The page gets a signature on a tag the user didn't review, such as
-an AO `Action` they would refuse. Medium: the preview lies, but the user
-still has to approve.
+an AO `Action` they would refuse. High: the preview leaves out what is
+signed (`mismatch`), and one ordinary approval is enough (`one-click`).
 
 **Steps**:
 
@@ -130,7 +170,11 @@ still has to approve.
 
 Trace: the `file:line` steps from the page call to the preview.
 
-Test: the throwaway test that shows the 17th tag is signed but not shown.
+```ts
+it("signs a 17th tag the preview doesn't show", () => {
+  // the test that shows the 17th tag is signed but not shown
+});
+```
 
 Not a duplicate of GHSA-xxxx-xxxx-xxxx, which covered tag values, not
 tag count.
@@ -138,17 +182,7 @@ tag count.
 </details>
 ```
 
-## PR body
+## No PRs
 
-The title stays a Conventional Commit. Write the part after
-`fix(security):` in a user's words too, with no code names.
-
-Follow `.github/PULL_REQUEST_TEMPLATE.md`, in the same style:
-
-- **Why**: one to three sentences on the problem the PR fixes.
-- **What**: one to three sentences, or a short list, on the change.
-- **Attestation id**: `Attestation id: {{ATTESTATION_ID}}`.
-- **Checklist**: tick only what you ran.
-
-Put any trace or long reasoning in a `<details>` block under **What**. A
-PR never holds the details of a medium or higher issue.
+A scan files no PRs. Nothing below Medium earns, so a Low finding is
+dropped, and a Medium-or-above fix goes as a patch inside its advisory.

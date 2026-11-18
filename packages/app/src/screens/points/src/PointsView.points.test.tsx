@@ -421,6 +421,35 @@ describe("PointsView", () => {
     expect(ways.compareDocumentPosition(screen.getByRole("region", { name: "Recent earnings" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("names the fix and best-finding bonuses apart from the finding they belong to", async () => {
+    const recentAt = new Date(Date.now() - 60_000).toISOString();
+    const points = (n: bigint) => (n * BigInt(ONE_POINT)).toString();
+    const advisory = "https://github.com/o/r/security/advisories/GHSA-1";
+    const runtime = fakeRuntime({
+      ...BALANCES,
+      getPointsMemberships: () => ({ [WALLET.id]: MEMBERSHIP }),
+      getPointsScores: () => ({
+        ...SCORES,
+        wallets: [
+          {
+            ...SCORES.wallets[0]!,
+            recent: [
+              { kind: "finding", amountAtomic: points(100n), at: recentAt, release: "1.42.0", ref: advisory },
+              { kind: "finding", amountAtomic: points(50n), at: recentAt, release: "1.42.0", ref: `${advisory}#best` },
+              { kind: "finding", amountAtomic: points(10n), at: recentAt, release: "1.42.0", ref: `${advisory}#fix` },
+            ],
+          },
+        ],
+      }),
+    });
+
+    renderWithQuery(<PointsView runtime={runtime} wallet={WALLET} onBack={vi.fn()} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Recent earnings/ }));
+    const recent = within(screen.getByRole("region", { name: "Recent earnings" }));
+    expect(recent.getAllByRole("listitem").map((item) => item.textContent?.split("↗")[0])).toEqual(["Finding", "Best finding", "Fix bonus"]);
+  });
+
   it("hides Recent earnings when nothing was credited in the last two days", async () => {
     const runtime = fakeRuntime({
       ...BALANCES,
