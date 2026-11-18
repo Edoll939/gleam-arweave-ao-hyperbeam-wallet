@@ -100,9 +100,9 @@ describe("BackupHandler: set up", () => {
     const text = new TextDecoder().decode(target.cloud.account.file!.bytes);
     for (const wallet of walletsOf(target)) {
       expect(text).not.toContain(wallet.address);
-      expect(text).not.toContain(wallet.name);
+      // Quoted as JSON, since a short bare name turns up in random base64 now and then.
+      expect(text).not.toContain(JSON.stringify(wallet.name));
     }
-    // Quoted as JSON, since a bare "Ada" turns up in random base64 now and then.
     expect(text).not.toContain('"Ada"');
   });
 
