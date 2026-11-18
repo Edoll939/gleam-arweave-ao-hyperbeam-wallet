@@ -28,6 +28,10 @@ interface Navigation {
 }
 
 const LOCK_POLL_MS = 10_000;
+// A shortener (t.co, bit.ly) finishes loading and then redirects by meta
+// refresh or script, so an origin counts as visited only once its page has
+// loaded and stayed this long.
+const RECENT_SETTLE_MS = 1_500;
 
 function frameOf(element: HTMLElement): DappBrowserFrame {
   const { x, y, width, height } = element.getBoundingClientRect();
@@ -128,23 +132,30 @@ export function BrowserView({ runtime, onBack, initialUrl, onOpenConnectedApp, o
     if (page) afterOpen(() => browser.setHidden(covered));
   }, [covered, page, browser, afterOpen]);
 
-  useEffect(
-    () =>
-      browser.subscribe((event) => {
-        if (event.kind === "loadError") {
-          setFailedUrl(event.url);
-          return;
-        }
-        setNav({ url: event.url, canGoBack: event.canGoBack, loading: event.loading });
-        const next = originOf(event.url);
-        if (next && next !== recorded.current) {
-          recorded.current = next;
-          runtime
-            .send({ type: "recordRecentSite", payload: { url: event.url } })
-            .then(() => sites.reload())
-            .catch(() => undefined);
-        }
-      }),
+  useEffect(() => {
+    let settle: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = browser.subscribe((event) => {
+      if (event.kind === "loadError") {
+        setFailedUrl(event.url);
+        return;
+      }
+      setNav({ url: event.url, canGoBack: event.canGoBack, loading: event.loading });
+      clearTimeout(settle);
+      const next = originOf(event.url);
+      if (event.loading || !next || next === recorded.current) return;
+      settle = setTimeout(() => {
+        recorded.current = next;
+        runtime
+          .send({ type: "recordRecentSite", payload: { url: event.url } })
+          .then(() => sites.reload())
+          .catch(() => undefined);
+      }, RECENT_SETTLE_MS);
+    });
+    return () => {
+      clearTimeout(settle);
+      unsubscribe();
+    };
+  },
     // `sites.reload` is stable per runtime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [browser, runtime],

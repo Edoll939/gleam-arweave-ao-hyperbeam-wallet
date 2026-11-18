@@ -214,12 +214,31 @@ describe("BrowserView with a page", () => {
     const { runtime, send } = fakeRuntime();
     mount({ browser: browser.port, runtime, initialUrl: "https://a.example/" });
     await browser.emit({ kind: "navigation", url: "https://a.example/page", canGoBack: false, loading: false });
-    expect(send).toHaveBeenCalledWith({ type: "recordRecentSite", payload: { url: "https://a.example/page" } });
+    await waitFor(() =>
+      expect(send).toHaveBeenCalledWith({ type: "recordRecentSite", payload: { url: "https://a.example/page" } }),
+      { timeout: 3_000 },
+    );
 
     fireEvent.click(screen.getByLabelText("Save site"));
     await waitFor(() =>
       expect(send).toHaveBeenCalledWith({ type: "saveBrowserSite", payload: { url: "https://a.example/page" } }),
     );
+  });
+
+  it("records where a shortener redirects to, not the shortener", async () => {
+    vi.useFakeTimers();
+    const browser = fakeBrowser();
+    const { runtime, send } = fakeRuntime();
+    mount({ browser: browser.port, runtime, initialUrl: "https://t.co/abc" });
+    await browser.emit({ kind: "navigation", url: "https://t.co/abc", canGoBack: false, loading: true });
+    await browser.emit({ kind: "navigation", url: "https://t.co/abc", canGoBack: false, loading: false });
+    await act(() => vi.advanceTimersByTimeAsync(100));
+    await browser.emit({ kind: "navigation", url: "https://b.example/post", canGoBack: false, loading: true });
+    await browser.emit({ kind: "navigation", url: "https://b.example/post", canGoBack: false, loading: false });
+    await act(() => vi.advanceTimersByTimeAsync(2_000));
+
+    const recorded = send.mock.calls.flatMap(([message]) => (message.type === "recordRecentSite" ? [message] : []));
+    expect(recorded).toEqual([{ type: "recordRecentSite", payload: { url: "https://b.example/post" } }]);
   });
 
   it("saves the page's icon with the site, only when it came from that site", async () => {
