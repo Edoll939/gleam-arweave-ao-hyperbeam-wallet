@@ -11,6 +11,10 @@ import type { ActivityEntry, ActivityPage } from "../models/activity";
  * gateway entry with no block yet keeps the local entry's status. The
  * local entry survives alone for `txId`s the gateway hasn't indexed yet.
  *
+ * What a local entry records the wallet signed itself — type, counterparty,
+ * amount and token — never changes: the gateway only settles its status
+ * and timestamp, so a lying gateway can't rewrite who a send went to.
+ *
  * Exception: a local entry already settled as `"failed"` stays failed. The
  * gateway indexing a message only proves it reached the network; a local
  * failure comes from the AO process's own evaluated result
@@ -38,7 +42,13 @@ export function mergeActivity(
     // The gateway only knows a sent collectible's process id; the local
     // entry kept its name and image.
     const collectible = local.collectible ?? settled.collectible;
-    const extra = collectible ? { timestamp, collectible } : { timestamp };
+    const own = {
+      type: local.type,
+      address: local.address,
+      amount: local.amount,
+      ...(local.token !== undefined ? { token: local.token } : {}),
+    };
+    const extra = collectible ? { timestamp, collectible, ...own } : { timestamp, ...own };
     if (local.status === "failed") {
       byTxId.set(entry.txId, { ...settled, ...extra, status: "failed", error: local.error ?? settled.error });
     } else if (settled.status === "pending") {

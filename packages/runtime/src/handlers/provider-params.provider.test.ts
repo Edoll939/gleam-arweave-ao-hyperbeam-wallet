@@ -183,3 +183,30 @@ describe("readDataItems", () => {
     expect(() => readDataItems([{ data: "a" }, {}])).toThrow(/batchSignDataItem: the data item needs data/);
   });
 });
+
+describe("request size", () => {
+  const MiB = 1024 * 1024;
+  const tooLarge = /too large to hold for approval/;
+
+  it("refuses a transaction past 2 MiB of data before decoding it, and keeps one just under", () => {
+    const b64 = (bytes: number) => Buffer.alloc(bytes, 0x61).toString("base64url");
+    expect(() => readTransaction({ data: b64(2 * MiB + 3) }, "sign")).toThrow(tooLarge);
+    expect(readTransaction({ data: b64(2 * MiB - 64) }, "sign").data.byteLength).toBe(2 * MiB - 64);
+  });
+
+  it("refuses a transaction with an endless list of empty tags", () => {
+    const tags = Array.from({ length: 2 * MiB + 1 }, () => ({ name: "", value: "" }));
+    expect(() => readTransaction({ tags }, "dispatch")).toThrow(tooLarge);
+  });
+
+  it("counts a batch as one request, across its items", () => {
+    const item = { data: "x".repeat(MiB) };
+    expect(readDataItems([item])).toHaveLength(1);
+    expect(() => readDataItems([item, item, item])).toThrow(tooLarge);
+    expect(() => readDataItems(Array.from({ length: 2 * MiB + 1 }, () => ({ data: "" })))).toThrow(tooLarge);
+  });
+
+  it("refuses a single data item past 2 MiB of tag text", () => {
+    expect(() => readDataItem({ data: "a", tags: [{ name: "N", value: "v".repeat(2 * MiB) }] }, "signDataItem")).toThrow(tooLarge);
+  });
+});

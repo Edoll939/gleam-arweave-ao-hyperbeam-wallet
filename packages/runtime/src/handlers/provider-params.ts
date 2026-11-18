@@ -117,6 +117,28 @@ export interface ProviderTransaction {
   last_tx?: string;
 }
 
+/**
+ * A site's request is held for approval only up to 2 MiB once stored, as
+ * base64 with field overhead (`PENDING_BYTES_PER_ORIGIN` in `approval.ts`),
+ * so more raw bytes than this can never be approved. Counting them as they
+ * are read refuses such a request before the background decodes, hashes
+ * and encodes all of it. Each tag and item also counts a byte, so a long
+ * list of empty ones is bounded too.
+ */
+const REQUEST_BYTES_LIMIT = 2 * 1024 * 1024;
+
+type SpendBytes = (bytes: number) => void;
+
+function requestBudget(): SpendBytes {
+  let used = 0;
+  return (bytes) => {
+    used += bytes;
+    if (used > REQUEST_BYTES_LIMIT) {
+      throw new Error(dappError("Gleam refused this request because it is too large to hold for approval."));
+    }
+  };
+}
+
 const ADDRESS_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const ATOMIC_AMOUNT_PATTERN = /^\d+$/;
 
@@ -173,25 +195,32 @@ export function readTransaction(value: unknown, method: "sign" | "dispatch"): Pr
     throw new Error(dappError(`${method} requires a transaction.`));
   }
   const transaction = value as Record<string, unknown>;
+  const spend = requestBudget();
 
   let data: Uint8Array<ArrayBuffer>;
   if (transaction.data === undefined || transaction.data === null) {
     data = new Uint8Array(0);
   } else if (typeof transaction.data === "string") {
+    spend(Math.floor((transaction.data.length * 3) / 4));
     data = decodeBase64Url(transaction.data, "transaction data", method);
   } else {
     data = readBytes(transaction.data, "data");
+    spend(data.byteLength);
   }
 
   if (transaction.tags !== undefined && !Array.isArray(transaction.tags)) {
     throw new Error(dappError(`${method}: transaction tags must be an array.`));
   }
-  const tags = ((transaction.tags as unknown[] | undefined) ?? []).map((tag) => {
+  const rawTags = (transaction.tags as unknown[] | undefined) ?? [];
+  spend(rawTags.length);
+  const tags = rawTags.map((tag) => {
     if (tag === null || typeof tag !== "object") {
       throw new Error(dappError(`${method}: every tag needs a string name and value.`));
     }
     const { name, value: tagValue } = tag as { name?: unknown; value?: unknown };
-    return { name: decodeTagText(name, method), value: decodeTagText(tagValue, method) };
+    const decoded = { name: decodeTagText(name, method), value: decodeTagText(tagValue, method) };
+    spend(decoded.name.length + decoded.value.length);
+    return decoded;
   });
 
   const target = readOptionalString(transaction.target, "target", method);
@@ -242,7 +271,11 @@ const ANCHOR_BYTES = 32;
  * UTF-8 text or bytes, and tags are plain `{ name, value }` text (not
  * base64url like a transaction's).
  */
-export function readDataItem(value: unknown, method: "signDataItem" | "batchSignDataItem"): ProviderDataItem {
+export function readDataItem(
+  value: unknown,
+  method: "signDataItem" | "batchSignDataItem",
+  spend: SpendBytes = requestBudget(),
+): ProviderDataItem {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(dappError(`${method} requires a data item object.`));
   }
@@ -251,16 +284,21 @@ export function readDataItem(value: unknown, method: "signDataItem" | "batchSign
   if (item.data === undefined || item.data === null) {
     throw new Error(dappError(`${method}: the data item needs data.`));
   }
+  if (typeof item.data === "string") spend(item.data.length);
   const data = typeof item.data === "string" ? new TextEncoder().encode(item.data) : readBytes(item.data, "data");
+  if (typeof item.data !== "string") spend(data.byteLength);
 
   if (item.tags !== undefined && item.tags !== null && !Array.isArray(item.tags)) {
     throw new Error(dappError(`${method}: data item tags must be an array.`));
   }
-  const tags = ((item.tags as unknown[] | null | undefined) ?? []).map((tag) => {
+  const rawTags = (item.tags as unknown[] | null | undefined) ?? [];
+  spend(rawTags.length);
+  const tags = rawTags.map((tag) => {
     const { name, value: tagValue } = (tag ?? {}) as { name?: unknown; value?: unknown };
     if (typeof name !== "string" || typeof tagValue !== "string") {
       throw new Error(dappError(`${method}: every tag needs a string name and value.`));
     }
+    spend(name.length + tagValue.length);
     return { name, value: tagValue };
   });
 
@@ -281,5 +319,7 @@ export function readDataItems(value: unknown): ProviderDataItem[] {
   if (!Array.isArray(value) || value.length === 0) {
     throw new Error(dappError("batchSignDataItem requires a non-empty array of data items."));
   }
-  return value.map((item) => readDataItem(item, "batchSignDataItem"));
+  const spend = requestBudget();
+  spend(value.length);
+  return value.map((item) => readDataItem(item, "batchSignDataItem", spend));
 }

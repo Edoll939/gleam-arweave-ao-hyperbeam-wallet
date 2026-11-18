@@ -339,8 +339,9 @@ export function createProviderHandlers(deps: ProviderDeps): ProviderHandlers {
           tags: transaction.tags,
         })
       : null;
-    // A dApp's transfer that also sends AR shows as the plain transaction.
-    const tokenTransfer = reading?.kind === "transfer" && reading.value === "0" ? reading : null;
+    // The reader reads a transfer only when it sends no AR or just the
+    // activation winston; any other AR value shows as the plain transaction.
+    const tokenTransfer = reading?.kind === "transfer" ? reading : null;
     const tokenMetadata =
       tokenTransfer && wallet ? await resolveTokenPreview(wallet.address, tokenTransfer.processId) : null;
     // A collectible's transfer of 1 shows as that collectible, as the
@@ -361,6 +362,10 @@ export function createProviderHandlers(deps: ProviderDeps): ProviderHandlers {
     const fee = bundled
       ? null
       : (transaction.reward ?? (await estimateFee(gatewayUrl, transaction.target, transaction.data.byteLength)).fee);
+    // The activation winston is AR the transaction moves, so the fee shown
+    // counts it, as the device step does. The reward signed stays `fee`.
+    const shownFee =
+      fee !== null && tokenTransfer && tokenTransfer.value !== "0" ? (BigInt(fee) + BigInt(tokenTransfer.value)).toString() : fee;
     return requestApproval({
       kind,
       origin,
@@ -381,7 +386,7 @@ export function createProviderHandlers(deps: ProviderDeps): ProviderHandlers {
             amount: transaction.target ? (transaction.quantity ?? "0") : null,
             ...(reading ? { unreadableTokenTransfer: true } : {}),
           }),
-      fee,
+      fee: shownFee,
       payload: transaction.data,
       tags: transaction.tags,
       gatewayUrl,

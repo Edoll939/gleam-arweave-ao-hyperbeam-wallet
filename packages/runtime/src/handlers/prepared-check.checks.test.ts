@@ -383,6 +383,11 @@ describe("checkDataItem", () => {
 });
 
 describe("summarize", () => {
+  it("keeps a message's leading byte order mark", () => {
+    const data = Uint8Array.from([0xef, 0xbb, 0xbf, 0x41]);
+    expect(summarize({ kind: "message", data })).toEqual({ kind: "message", text: "\uFEFFA", size: 4 });
+  });
+
   it("shows a clean L1 token transfer with the fee including the activation winston", () => {
     expect(summarize(l1TokenTx({ quantity: "1", reward: "999" }))).toEqual({
       kind: "l1TokenTransfer",

@@ -977,6 +977,8 @@ export class ReadsHandler {
           tags: entry.tags,
           timestamp: entry.timestamp,
           collectible,
+          // Holding the asset doesn't show this receipt's sender moved it.
+          ...(entry.unverified ? { unverified: true as const } : {}),
         };
       }),
     );

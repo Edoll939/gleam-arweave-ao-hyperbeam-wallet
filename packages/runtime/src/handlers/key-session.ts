@@ -305,6 +305,9 @@ export function createKeySession({ sessionKeys, storage }: KeySessionDeps): KeyS
       await storage.set(entryKey(walletId), { address, owner: jwk.n } satisfies SessionKeyEntry);
       await trackWalletId(walletId);
     } catch (error) {
+      // A wallet with no session entry reads as locked, so its key must not
+      // stay in the keyring, where it would still sign.
+      await sessionKeys.remove(walletId).catch((cleanupError: unknown) => console.error("Couldn't drop a key after a failed cache.", cleanupError));
       throw new SessionKeyStorageError(error);
     }
   }

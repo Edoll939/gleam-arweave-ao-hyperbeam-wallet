@@ -419,6 +419,12 @@ interface PendingApprovalRecord {
   siteIcon?: string | null;
   /** Set by `resolveApproval` immediately before the record is removed. */
   outcome?: ApprovalOutcome;
+  /**
+   * Set, in its own write, just before an approval's work runs. Its work
+   * may post a transfer, so a record still carrying it after a worker
+   * restart is never run again: the first run may already have posted.
+   */
+  attempted?: true;
   /** Set once a hardware wallet's request is approved and waits for the device. */
   device?: PendingDeviceSigning;
 }
@@ -1201,11 +1207,22 @@ export class ApprovalHandler {
     const siteIcon =
       origin === WALLET_APPROVAL_ORIGIN || kind === "connect" ? null : ((await this.findActiveGrant(origin))?.icon ?? null);
     const request = siteIcon ? { ...entry.request, siteIcon } : entry.request;
-    if (!entry.device || !entry.walletId) return request;
+    // The wallet this request signs or sends from, pinned when the request
+    // was made. The approval shows it as From: the active wallet can be a
+    // different one by the time the window loads — a wallet-origin transfer
+    // survives a switch (`signsForActiveWallet` excludes Gleam's own
+    // requests from cancel-on-switch), so deriving From from the active
+    // wallet shows the wrong sender. Connect and addToken sign nothing,
+    // so they carry none; a pinned wallet that no longer exists leaves the
+    // view without one, and the UI then shows no From.
+    const signs = kind !== "connect" && kind !== "addToken";
+    const source = signs && entry.walletId ? await this.keySession.getStoredWallet(entry.walletId) : null;
+    const view = source ? { ...request, signingWallet: { id: source.id, address: source.address } } : request;
+    if (!entry.device || !entry.walletId) return view;
     const wallet = await this.hardwareWallet(entry.walletId);
     const payloads = fromStored(entry.device.payloads) as UnsignedPayload[];
     return {
-      ...request,
+      ...view,
       device: {
         ...wallet,
         payloads: payloads.map(toWirePayload),
@@ -1255,6 +1272,10 @@ export class ApprovalHandler {
             if (!(await this.lapsedSince(entry))) return view;
             outcome = DISCONNECTED_OUTCOME;
           } else {
+            if (entry.attempted) throw new Error(userErrorMessage("approvalResolving", { id: req.requestId }));
+            await this.updatePending((current) =>
+              current.map((candidate) => (candidate.request.requestId === req.requestId ? { ...candidate, attempted: true as const } : candidate)),
+            );
             result = await this.finalizeApproval(entry);
             outcome = await this.withheldIfLapsed(entry, { approved: true, result: toStored(result) });
           }

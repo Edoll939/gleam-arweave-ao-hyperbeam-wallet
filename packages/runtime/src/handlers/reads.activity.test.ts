@@ -1757,8 +1757,9 @@ describe("ReadsHandler: discovered tokens", () => {
       tags: expect.any(Array),
       timestamp: 10_000,
       collectible: { id: CACHED, name: "Cached POMP", imageUrl: `https://arweave.net/${CACHED}` },
+      unverified: true,
     });
-    expect(page.entries.find((e) => e.txId === "r-held")).toMatchObject({ type: "receive", amount: null, collectible: { id: HELD, name: "Held POMP" } });
+    expect(page.entries.find((e) => e.txId === "r-held")).toMatchObject({ type: "receive", amount: null, collectible: { id: HELD, name: "Held POMP" }, unverified: true });
     expect(page.entries.find((e) => e.txId === "r-gone")).toBeUndefined();
     // HELD arrived after the cached list was saved, so the next read rediscovers.
     expect(await storage.get(`local:collectibles:${WALLET}`)).toMatchObject({ savedAt: 0 });

@@ -33,6 +33,17 @@ describe("mergeActivity", () => {
     expect(page.entries[0]?.status).toBe("confirmed");
   });
 
+  it("keeps the counterparty, amount and token the wallet recorded when the gateway disagrees", () => {
+    for (const status of ["pending", "failed"] as const) {
+      const local = [entry({ txId: "tx-1", timestamp: 100, status, address: "realRecipient", amount: "5", token: "tokenA" })];
+      const gateway = [entry({ txId: "tx-1", timestamp: 200, status: "confirmed", address: "attacker", amount: "500", token: "tokenB" })];
+
+      const [merged] = mergeActivity(local, gateway, 10).entries;
+
+      expect(merged).toMatchObject({ address: "realRecipient", amount: "5", token: "tokenA", timestamp: 200 });
+    }
+  });
+
   it("keeps a sent collectible's name and image once the gateway confirms it", () => {
     const collectible = { id: "asset", name: "Beam #1", imageUrl: "https://arweave.net/asset" };
     const local = [entry({ txId: "tx-1", timestamp: 100, status: "pending", amount: null, collectible })];
