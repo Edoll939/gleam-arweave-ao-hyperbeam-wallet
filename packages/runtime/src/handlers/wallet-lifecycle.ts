@@ -33,7 +33,7 @@ import {
   type WalletState,
   type WalletSummary,
 } from "@gleam/core";
-import { BROWSER_RECENT_SITES_KEY, BROWSER_SAVED_SITES_KEY, BROWSER_SITE_ICONS_KEY } from "./browser-sites";
+import { BROWSER_HISTORY_KEY, BROWSER_RECENT_SITES_KEY, BROWSER_SAVED_SITES_KEY, BROWSER_SITE_ICONS_KEY } from "./browser-sites";
 import {
   decryptFromEnvelope,
   DEFAULT_ARGON2ID_PARAMS,
@@ -865,6 +865,7 @@ export class WalletLifecycleHandler {
     await this.storage.remove(BROWSER_SAVED_SITES_KEY);
     await this.storage.remove(BROWSER_RECENT_SITES_KEY);
     await this.storage.remove(BROWSER_SITE_ICONS_KEY);
+    await this.storage.remove(BROWSER_HISTORY_KEY);
     // The file stays in the account: a reset is for a forgotten password, and it may be remembered.
     await this.storage.remove(BACKUP_KEY);
     await this.storage.remove(BACKUP_STATE_KEY);

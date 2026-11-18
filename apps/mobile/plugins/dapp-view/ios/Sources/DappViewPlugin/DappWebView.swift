@@ -71,7 +71,8 @@ final class DappWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         observations = [
             webView.observe(\.url) { [weak self] _, _ in self?.emitNavigation() },
             webView.observe(\.canGoBack) { [weak self] _, _ in self?.emitNavigation() },
-            webView.observe(\.isLoading) { [weak self] _, _ in self?.emitNavigation() }
+            webView.observe(\.isLoading) { [weak self] _, _ in self?.emitNavigation() },
+            webView.observe(\.title) { [weak self] _, _ in self?.emitNavigation() }
         ]
     }
 
@@ -240,7 +241,8 @@ final class DappWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         events.navigation([
             "url": url.absoluteString,
             "canGoBack": webView.canGoBack,
-            "loading": webView.isLoading
+            "loading": webView.isLoading,
+            "title": webView.title ?? ""
         ])
     }
 

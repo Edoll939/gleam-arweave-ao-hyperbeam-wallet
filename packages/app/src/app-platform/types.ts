@@ -199,7 +199,8 @@ export interface DappBrowserFrame {
 }
 
 export type DappBrowserEvent =
-  | { kind: "navigation"; url: string; canGoBack: boolean; loading: boolean }
+  /** `title` is the page's own `<title>`: untrusted, and empty or missing until it has one. */
+  | { kind: "navigation"; url: string; canGoBack: boolean; loading: boolean; title?: string }
   | { kind: "loadError"; url: string; message: string };
 
 /**

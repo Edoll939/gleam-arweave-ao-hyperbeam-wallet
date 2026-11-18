@@ -19,7 +19,7 @@ export function AddressRow({
 }: {
   address: string;
   name: string | null;
-  /** Plain muted text at the row's end. */
+  /** Plain faint text at the row's end. */
   note?: string;
   onSelect: () => void;
 }) {
@@ -41,7 +41,7 @@ export function AddressRow({
       ) : (
         <span className="min-w-0 flex-1 truncate font-mono text-label text-foreground">{truncateAddress(address, 6)}</span>
       )}
-      {note ? <span className="flex-shrink-0 text-caption text-muted">{note}</span> : null}
+      {note ? <span className="flex-shrink-0 text-caption text-faint">{note}</span> : null}
     </button>
   );
 }

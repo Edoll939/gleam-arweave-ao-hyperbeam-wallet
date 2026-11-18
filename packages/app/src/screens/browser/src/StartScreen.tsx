@@ -3,19 +3,25 @@ import { cn } from "@gleam/ui/src/primitives/cn.ts";
 import { useT, type TFunction } from "../../../i18n";
 import { BUILT_IN_SITES, knownSite, matchSites, parseAddress, siteHost, type KnownSite } from "./address";
 import { BUILT_IN_ICONS } from "./built-in-icons";
+import { originOf, trailText, type BrowserVisit } from "./history";
+import { useVisitTime } from "./useVisitTime";
 
 export interface StartScreenProps {
   /** What the user has typed in the address field. */
   query: string;
   saved: readonly string[];
   recent: readonly string[];
+  /** Pages opened, newest first. */
+  history: readonly BrowserVisit[];
   /** A saved site's stored icon, by origin. */
   icons: Readonly<Record<string, string>>;
   onOpen: (url: string) => void;
   onRemoveSaved: (origin: string) => void;
   /** Present only where the host can clear what sites stored. */
   onClearSiteData?: () => Promise<unknown>;
+  /** Clears the recent sites and the page history. */
   onClearRecent?: () => Promise<unknown>;
+  onOpenHistory: () => void;
 }
 
 function sitesOf(urls: readonly string[]): KnownSite[] {
@@ -28,8 +34,25 @@ function sitesOf(urls: readonly string[]): KnownSite[] {
  * stored when the site was saved, and every other row carries a letter, so
  * showing this screen makes no network request.
  */
-export function StartScreen({ query, saved, recent, icons, onOpen, onRemoveSaved, onClearSiteData, onClearRecent }: StartScreenProps) {
+export function StartScreen({
+  query,
+  saved,
+  recent,
+  history,
+  icons,
+  onOpen,
+  onRemoveSaved,
+  onClearSiteData,
+  onClearRecent,
+  onOpenHistory,
+}: StartScreenProps) {
   const t = useT();
+  const visitTime = useVisitTime();
+  /** Where the user last was on `origin` and when, from the newest visit there. */
+  const lastVisit = (origin: string): string | undefined => {
+    const visit = history.find((entry) => originOf(entry.url) === origin);
+    return visit ? [trailText(visit.url), visitTime(visit.at)].filter(Boolean).join(" · ") : undefined;
+  };
   const iconOf = (url: string): string | undefined => icons[url] ?? BUILT_IN_ICONS[url];
   const savedSites = sitesOf(saved);
   const builtIn = sitesOf(BUILT_IN_SITES);
@@ -75,13 +98,25 @@ export function StartScreen({ query, saved, recent, icons, onOpen, onRemoveSaved
           <SiteRow key={site.url} host={site.host} icon={iconOf(site.url)} onOpen={() => onOpen(site.url)} />
         ))}
       </Section>
-      {recentSites.length > 0 ? (
+      {recentSites.length > 0 || history.length > 0 ? (
         <Section
           title={t("browser.recent")}
-          action={onClearRecent ? <ClearButton label={t("browser.clear")} ariaLabel={t("browser.clearRecent")} clear={onClearRecent} /> : undefined}
+          action={
+            <button
+              type="button"
+              onClick={onOpenHistory}
+              className="-mx-3 flex min-h-11 items-center gap-0.5 rounded-lg px-3 text-label font-semibold text-muted active:bg-mist focus-visible:outline focus-visible:outline-2 focus-visible:outline-foreground"
+            >
+              {t("browser.history")}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 5 7 7-7 7" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          }
+          footer={onClearRecent ? <ClearButton label={t("browser.clearHistory")} clear={onClearRecent} /> : undefined}
         >
           {recentSites.map((site) => (
-            <SiteRow key={site.url} host={site.host} onOpen={() => onOpen(site.url)} />
+            <SiteRow key={site.url} host={site.host} caption={lastVisit(site.url)} onOpen={() => onOpen(site.url)} />
           ))}
         </Section>
       ) : null}
@@ -113,13 +148,12 @@ const CLEAR_BUTTON =
   "-mx-3 min-h-11 rounded-lg px-3 text-label font-semibold text-muted active:bg-mist focus-visible:outline focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-60";
 
 /** Wipes something and says so; recents hold nothing worth a second tap. */
-function ClearButton({ label, ariaLabel, clear }: { label: string; ariaLabel?: string; clear: () => Promise<unknown> }) {
+function ClearButton({ label, clear }: { label: string; clear: () => Promise<unknown> }) {
   const t = useT();
   const { state, run } = useClear(clear);
   return (
     <button
       type="button"
-      aria-label={state === "idle" ? ariaLabel : undefined}
       disabled={state === "busy"}
       onClick={run}
       className={CLEAR_BUTTON}
@@ -166,11 +200,13 @@ function Section({
   title,
   hint,
   action,
+  footer,
   children,
 }: {
   title: string;
   hint?: string;
   action?: React.ReactNode;
+  footer?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -181,6 +217,7 @@ function Section({
       </div>
       <div className="flex flex-col">{children}</div>
       {hint ? <p className="pt-1 text-caption text-faint">{hint}</p> : null}
+      {footer ? <div className="flex pt-1">{footer}</div> : null}
     </section>
   );
 }

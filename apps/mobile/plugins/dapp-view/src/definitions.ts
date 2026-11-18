@@ -56,6 +56,8 @@ export interface DappViewNavigation {
   url: string;
   canGoBack: boolean;
   loading: boolean;
+  /** The page's `<title>`, which the page sets: untrusted. Empty before it has one. */
+  title?: string;
 }
 
 export interface DappViewPageIcon {

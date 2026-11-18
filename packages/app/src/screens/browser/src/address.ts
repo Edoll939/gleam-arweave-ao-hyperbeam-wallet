@@ -31,6 +31,44 @@ export function siteHost(url: string): SiteHost | null {
   }
 }
 
+/** A segment that reads as an ID (a tx id, hash or token) rather than a word. */
+const ID_SEGMENT = /^(?=.*\d)[A-Za-z0-9_-]{16,}$/;
+const MAX_SEGMENT = 32;
+
+/**
+ * Where on its site `url` is, as path segments to show after the host:
+ * `/pomp/claim/72mV…` is `["pomp", "claim", "…"]`. An ID-like or long
+ * segment becomes `…` (runs of them one `…`), and the query is left out.
+ * A hash route (`/#/asset/…`, common on Arweave gateways) counts as the path.
+ */
+export function pageTrail(url: string): string[] {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return [];
+  }
+  const hashRoute = /^#!?\//.exec(parsed.hash);
+  const path = parsed.pathname === "/" && hashRoute ? (parsed.hash.slice(hashRoute[0].length).split("?")[0] ?? "") : parsed.pathname;
+  const trail: string[] = [];
+  for (const raw of path.split("/")) {
+    if (raw === "") continue;
+    let segment: string;
+    try {
+      segment = decodeURIComponent(raw);
+    } catch {
+      segment = raw;
+    }
+    // A decoded bidi override could make the path draw over the host.
+    segment = segment.replace(/[\p{Cc}\p{Cf}]/gu, "");
+    if (segment === "") continue;
+    const shown = segment.length > MAX_SEGMENT || ID_SEGMENT.test(segment) ? "…" : segment;
+    if (shown === "…" && trail[trail.length - 1] === "…") continue;
+    trail.push(shown);
+  }
+  return trail;
+}
+
 const HTTP_SCHEME = /^https?:\/\//i;
 const ANY_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUILT_IN_SITES, knownSite, matchSites, parseAddress, resolveInput, siteHost, type KnownSite } from "./address";
+import { BUILT_IN_SITES, knownSite, matchSites, pageTrail, parseAddress, resolveInput, siteHost, type KnownSite } from "./address";
 
 const SITES = [
   "https://my.example/",
@@ -88,5 +88,33 @@ describe("resolveInput", () => {
   it("opens nothing when text is neither", () => {
     expect(resolveInput("nothing here", SITES)).toBeNull();
     expect(resolveInput("javascript:alert(1)", SITES)).toBeNull();
+  });
+});
+
+describe("pageTrail", () => {
+  it("is empty on a site's home page", () => {
+    expect(pageTrail("https://ao.arweave.net/")).toEqual([]);
+    expect(pageTrail("https://ao.arweave.net/?ref=x")).toEqual([]);
+  });
+
+  it("collapses an ID to … and drops the query", () => {
+    expect(pageTrail("https://www.permatell.xyz/pomp/claim/72mVqAhoivaMzHOEVNRo6Kisy8avXCsjJJpitpM5mVQ?a=1")).toEqual([
+      "pomp",
+      "claim",
+      "…",
+    ]);
+  });
+
+  it("keeps words, folds a run of IDs into one …", () => {
+    expect(pageTrail("https://app.example/pools/wAR-AO/add-liquidity")).toEqual(["pools", "wAR-AO", "add-liquidity"]);
+    expect(pageTrail("https://x.com/a/status/1859123456789012345/abcdefabcdef1234567890")).toEqual(["a", "status", "…"]);
+  });
+
+  it("reads a hash route as the path", () => {
+    expect(pageTrail("https://bazar.arweave.net/#/asset/Xyz0123456789abcdefABCDEF?tab=1")).toEqual(["asset", "…"]);
+  });
+
+  it("decodes segments and strips control and bidi characters", () => {
+    expect(pageTrail("https://a.example/caf%C3%A9/%E2%80%AEevil")).toEqual(["café", "evil"]);
   });
 });
