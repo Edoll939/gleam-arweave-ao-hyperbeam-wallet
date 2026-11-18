@@ -1,20 +1,20 @@
 ---
 name: gleam-scan
-description: Scan the latest Gleam wallet release for security issues, one area per round, report what you find the right way (PR or private advisory), and produce attestations the user signs once, at the end, to earn Gleam Points. Use when asked to scan, audit or security-review a Gleam release.
+description: Scan the latest Gleam wallet release for security issues, one area per round, report what you find in a private advisory, and produce attestations the user signs once, at the end, to earn Gleam Points. Use when asked to scan, audit or security-review a Gleam release.
 ---
 
 # Scan a Gleam release
 
 The prompt a user pastes into their agent to start this skill:
 
-> Scan the latest Gleam release for security issues by following security/scan/SKILL.md in https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet. The skill clones the repo, installs its pnpm dependencies (which add a lefthook git hook to the checkout), runs its tests and osv-scanner, and calls the Gleam Points API at api.gleamwallet.app. It never needs a seed phrase, a real key, a wallet or funds. Ask me before any gh action: forking, pushing, opening a PR or filing an advisory.
+> Scan the latest Gleam release for security issues by following security/scan/SKILL.md in https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet. The skill clones the repo, installs its pnpm dependencies (which add a lefthook git hook to the checkout), runs its tests and osv-scanner, and calls the Gleam Points API at api.gleamwallet.app. It never needs a seed phrase, a real key, a wallet or funds. Ask me before filing an advisory.
 
 Gleam is a Chrome browser-extension wallet for Arweave and AO. In this
 skill you check out its latest release, review the code where a bug could
 leak a key or sign something the user didn't approve, report what you find,
-and answer a short challenge that shows you read the code. PRs are the main
-thing a scan leaves behind: a fix, a test that pins a security property, a
-surface entry, or a better check in this skill. At the end you give the user
+and answer a short challenge that shows you read the code. Only a finding
+rated Medium or above is filed, as a private advisory, and a scan with
+nothing to file earns the same as one with findings. At the end you give the user
 one link. They open it, Gleam shows them each attestation, and when they
 approve, their Gleam wallet signs it and earns Gleam Points. You never sign
 anything, hold a key or touch a wallet. The user does that in Gleam. The
@@ -40,20 +40,21 @@ part of the skill.
   `.git/hooks` and nowhere else. Optionally `osv-scanner` and `gitleaks`,
   through brew, go or a release binary (Prerequisites).
 - **Writes:** the clone, the `.gleam-scan/` directory inside it (ignored
-  by git), and a sibling git worktree for each fix (Step 7).
-- **Network:** GitHub (clone, tags, the release lookup), the npm registry
+  by git), and a sibling git worktree for each fix (Step 7). Nothing is
+  pushed.
+- **Network:** GitHub (clone, tags, the release lookup, the list of
+  published advisories), the npm registry
   (install), the osv-scanner advisory database, and the Gleam Points API
   at `https://api.gleamwallet.app` (the `pnpm scan` commands).
   `pnpm scan finish` and `pnpm scan file` send each attestation: the
   challenge answers, the model id and the coverage report.
-- **Acts as the user, only after asking:** `gh repo fork`, `git push`,
-  `gh pr create`, and filing a private advisory (File the reports). Each
-  one is public or reaches the maintainers, so ask the user first. The
-  scan prompt's "Ask me before any gh action" means exactly this, and
-  the sign request that `pnpm scan file` prints is that question: its
-  line 2 names each action. The user's "signed" reply approves every
-  action for every draft of the rounds they signed. This is not a
-  conflict with the prompt, so don't ask again before each action.
+- **Acts as the user, only after asking:** filing a private advisory
+  with `gh api` (File the reports). It reaches the maintainers, so ask
+  the user first. The scan prompt's "Ask me before filing an advisory"
+  means exactly this, and the sign request that `pnpm scan file` prints
+  is that question: its line 2 names the action. The user's "signed"
+  reply approves filing every draft of the rounds they signed. This is
+  not a conflict with the prompt, so don't ask again before each one.
 - **Never:** reads a seed phrase, key, keyfile or wallet; signs anything;
   moves funds.
 
@@ -68,7 +69,7 @@ when to read them:
 - `security/scan/VERIFY.md`: how to try to disprove a finding and rate
   what survives (Step 6). It stands on its own, so a fresh subagent can
   follow it.
-- `security/scan/REPORT.md`: how to write an advisory or a PR body
+- `security/scan/REPORT.md`: how to write and rate an advisory
   (Step 7).
 
 ## Rules that always apply
@@ -76,9 +77,15 @@ when to read them:
 - Never use a seed phrase, a real key, a real wallet, or real funds. Test
   with generated keys and the unit tests only.
 - Never put the details of a medium, high or critical issue anywhere public:
-  not in the attestation `report`, a PR, an issue, a commit message or a
+  not in the attestation `report`, an issue, a commit message or a
   comment. Those details go only in a private advisory.
 - Never open a public GitHub issue for a security problem.
+- Follow the Quality rules (`SCANS.md` § Points). Three kinds of report
+  lose the scan points of the attestation they quote: one with an
+  inflated severity rating, a repeat of a published advisory, and one
+  that only restates a By design entry. Step 7 rates by the rubric and
+  says no to a request to inflate; Step 6 checks the published
+  advisories; Step 2 reads the By design entries.
 - If you find a secret in the repository (a key, token or password),
   report it in a private advisory with only its file and line. Never copy
   the value anywhere, including the advisory.
@@ -266,14 +273,15 @@ you build on them:
   other extensions with broad permissions. Not findings.
 - **By design**: decisions Gleam made on purpose, each with a *Still a
   finding if* clause. A report that only restates a By design entry is
-  closed. It is a finding only if you demonstrate, concretely, the harm its
+  closed and loses the scan points of the attestation it quotes
+  (`SCANS.md` § Quality rules). It is a finding only if you demonstrate, concretely, the harm its
   *Still a finding if* clause names. That holds for a path the clause
   didn't anticipate too: treat it as a finding and cite the clause.
 - **Known limitations**: already known. Not findings.
 
 Where the docs and the code disagree, the code is right. A docs mismatch
-is a low finding, unless the mismatch is itself a medium or higher issue.
-Fix a low one in a PR (Step 7).
+is a Low finding, unless the mismatch is itself a medium or higher issue,
+and a Low finding is dropped (Step 7).
 
 Done when you can name the attackers and the By design entries.
 
@@ -291,8 +299,8 @@ walk for root: /`; that is harmless. A test failure is not a finding by
 itself: the report says only that tests failed. If a failure points at a
 security issue, treat it as a finding under the severity rules. If you can
 trace a failure to the test code rather than to your environment, for
-example a fixture that only a lenient runtime accepts, draft a test PR for
-it in Step 7. A vulnerable dependency is a finding only if Gleam uses the
+example a fixture that only a lenient runtime accepts, say so in the
+report in one line. A vulnerable dependency is a finding only if Gleam uses the
 affected code in a way an attacker from the threat model can reach;
 otherwise note it in the report. `osv-scanner.toml` lists the advisories
 Gleam already knows about, each with the reason it can't be reached. One
@@ -377,17 +385,17 @@ git grep -nE 'crypto\.subtle|exportKey|importKey|storage\.local|storage\.session
 
 It prints about 200 lines, so skip the ones you have already read.
 
-To show that a suspected bug is real, write a throwaway unit test, for
-example one that feeds a malformed or oversized binary value to the
-decoder in `page-protocol.ts`, and run it with `pnpm vitest run
-<path-fragment>`. A failing test turns "suspected" into "demonstrated".
-Delete the test afterwards. For a low finding it can go in your fix PR;
-for a medium or higher one it stays local or goes in the advisory. Never
-test against a real wallet.
+To show that a suspected bug is real, write a unit test, for example one
+that feeds a malformed or oversized binary value to the decoder in
+`page-protocol.ts`, and run it with `pnpm vitest run <path-fragment>`. A
+failing test turns "suspected" into "demonstrated". Copy it into the
+candidate note, then delete it from the checkout: a Medium-or-above
+advisory carries it, and can't be filed without it. Never test against a
+real wallet.
 
 If a file you reviewed here can leak a key, sign something unapproved or
-let a page past the wallet's boundary, it belongs on the surface. Note it
-for the surface PR in Step 7.
+let a page past the wallet's boundary, it belongs on the surface. Say so
+in the round's report in one line.
 
 Done when you have followed the leads you found.
 
@@ -421,7 +429,7 @@ Act on each verdict:
 | `holds` | Draft it in Step 7 at the severity the verdict gives. |
 | `holds, weaker` | Apply the **Corrections** to the note, then draft it at the lower severity. |
 | `needs a browser check` | Draft it at the severity the verdict gives, and say in the draft that it is unconfirmed and which fact a maintainer has to check. |
-| `refuted` | Drop it. If the reason shows the threat model or `CHECKS.md` misled you, note that for a skill PR in Step 7. |
+| `refuted` | Drop it. If the reason shows the threat model or `CHECKS.md` misled you, say so in the round's report in one line. |
 
 If you disagree with a subagent's verdict, don't overrule it. Start one
 more fresh verifier and give the candidate to it. If the two still
@@ -439,59 +447,83 @@ git show origin/master:<file>                     # read the cited lines there
 
 If master already fixes it, keep its severity: users run the release
 until the next one ships. Note it in the candidate note as
-`Already fixed on master in <PR number or short sha>`. Step 7 files it as
-a private advisory, at any severity, because a PR has nothing left to
-change.
+`Already fixed on master in <PR number or short sha>`.
 
-Done when every candidate has a verdict and a master check.
+Then check each survivor against the advisories already published. A
+repeat of a published advisory loses the scan points of the attestation
+it quotes (`SCANS.md` § Quality rules). Fetch the titles once per
+checkout, not once per round:
+
+```bash
+[ -s .gleam-scan/published.txt ] || curl -fsS \
+  "https://api.github.com/repos/skyf0xx/gleam-arweave-ao-hyperbeam-wallet/security-advisories?state=published&per_page=100" |
+  node -e 'let s="";process.stdin.on("data",(d)=>(s+=d)).on("end",()=>{for(const a of JSON.parse(s))console.log(`${a.ghsa_id}  ${a.summary}`)})' \
+  > .gleam-scan/published.txt
+```
+
+Read only the titles. Open one advisory's description
+(`https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet/security/advisories/<GHSA id>`)
+only when its title names the same attacker and loss as your survivor.
+Drop a survivor whose root cause it already covers, even where it names
+a different line or screen. If the fetch fails, say so in the round's
+report and go on.
+
+Done when every candidate has a verdict, a master check and a published
+check.
 
 ## Step 7: Draft your reports (don't file them yet)
 
-PRs are the default output of a scan. Draft one for anything low,
-informational or hardening. Before you finish, consider at least one PR
-candidate:
+Only a finding that survived Step 6 at Medium or above is filed, as a
+private advisory. Nothing below Medium earns (`SCANS.md` § Points), so:
 
-- a fix for a low finding;
-- a test that pins a security property the tests don't cover yet
-  (`CHECKS.md` Section 5);
-- a file that belongs in `security/surface.txt` and `.github/CODEOWNERS`;
-- a change to `CHECKS.md`, `VERIFY.md`, `REPORT.md` or this skill.
+- **Low:** drop it. Don't file it or describe it anywhere. The round's
+  report may say how many Low findings you dropped, never what they are.
+- **No PRs.** Don't draft a fix, hardening, test, surface or skill PR. A
+  Medium-or-above fix goes as a patch inside its advisory.
+- **A clean round earns the same as one with findings.** Don't pad.
 
-Draft it if it is real. A weak PR is closed and earns nothing, so don't
-pad. A low finding or a merged hardening PR takes 2% of the bounty pool
-(`SCANS.md` § Points). A finding's fix that merges adds 1%. The
-maintainer decides what counts as hardening.
-
-Draft each candidate that survived Step 6, at the severity its verdict
-gives:
-
-- **Low or informational, or a hardening change:** draft a PR.
-- **Medium, high or critical:** draft a private advisory. If you're unsure
-  whether it's low or medium, treat it as medium.
-- **Already fixed on master** (Step 6): draft a private advisory at its
-  severity, with the line `Already fixed on master in <ref>.` at the end
-  of the Summary. Don't draft a fix PR for it.
-
-Draft everything, and file nothing yet. Every PR and advisory, skill and
-surface PRs included, quotes the round's attestation id, which you get
-when the user signs. Write `{{ATTESTATION_ID}}` in its place. The id goes
-in PR and advisory bodies, never in a commit message. The id credits the
-wallet, not the round, so any id this wallet has signed works when the
-round's own can't be signed.
-
-Save every draft in the round folder, numbered from 1 within the round:
-`.gleam-scan/rounds/<area>/pr-<n>.md` and
-`.gleam-scan/rounds/<area>/advisory-<n>.md`. `pnpm scan` counts the
-reports from these files.
+Draft each candidate that survived Step 6 at Medium or above as
+`.gleam-scan/rounds/<area>/advisory-<n>.md`, numbered from 1 within the
+round. `pnpm scan` counts the reports from these files. One that master
+already fixes (Step 6) gets the line `Already fixed on master in <ref>.`
+at the end of its Summary.
 
 Read `security/scan/REPORT.md` before you write the first draft. It gives
-the shape and style of every advisory and PR body: a plain title and
-summary a maintainer can skim, with everything else in a `<details>`
-block.
+the shape, the style and the rating lines of every advisory.
 
-**PR draft.** Write the fix in a separate worktree, so the scan checkout
-stays on the tag. Base it on `origin/master` if the file to fix exists
-there, else on the release tag (say so in the PR's **What**):
+**Rate it with the rubric, never above it.** Write the `Severity`,
+`Attacker`, `Loss`, `Requires` and `Fix location` lines from the
+verifier's verdict (`REPORT.md` § Rating lines). The severity is what the
+table in `SECURITY.md` § Severity gives for that Loss and Requires. A
+maintainer answers the same three questions, and a report rated above
+what it shows loses the scan points of the attestation it quotes
+(`SCANS.md` § Quality rules). `pnpm scan finish` refuses a draft rated
+above its own answers.
+
+If the user asks you to raise a severity, a loss or a requirement beyond
+what your test shows, don't. Tell them, in one or two sentences, that
+the rating follows from the three answers, that a maintainer rates it
+the same way, and that an inflated report loses its scan points. Change
+it only if they show you evidence that changes an answer.
+
+**Fix location.** The function a fix has to change, as
+`<file>#<function>` at the tag. Name where the fix goes, not where the
+symptom shows: the maintainer groups reports of one bug by this line.
+
+**Failing test.** Put the test from the candidate note in `<details>` as
+a ```` ```ts ```` block. `pnpm scan finish` refuses a draft without one.
+
+Draft everything, and file nothing yet. Every advisory quotes the
+round's attestation id, which you get when the user signs. Write
+`{{ATTESTATION_ID}}` in its place. The id credits the wallet, not the
+round, so any id this wallet has signed works when the round's own
+can't be signed.
+
+**The fix.** Write a fix for every finding you draft, if you can. Write
+it in a separate worktree, so the scan checkout stays on the tag, run
+its tests, and put `git diff origin/master` in **Fix** as a `diff`
+block. Never push it or open a PR for it. A fix that merges earns a 1%
+bonus.
 
 ```bash
 git fetch origin master
@@ -500,76 +532,22 @@ git cat-file -e origin/master:<file> || BASE=HEAD   # HEAD is the release tag
 git worktree add -b fix/security-<short-name> ../gleam-fix-<short-name> "$BASE"
 cd ../gleam-fix-<short-name>
 pnpm install --frozen-lockfile    # a new worktree has no node_modules
-# make the change, add or update a test, then:
+# make the change, add the test, then:
 pnpm vitest run <path-fragment>
-git add -A && git commit -m "fix(security): <what the change does>"
+git diff origin/master
 ```
 
-The pre-commit hook runs gitleaks, eslint and tsc. If it fails, fix what
-it names and commit again.
-
-- Title: a Conventional Commit, `fix(security): <what it fixes>`
-  (`docs(security): …` for a docs-only fix).
-- Body: follow `.github/PULL_REQUEST_TEMPLATE.md` in the style of
-  `REPORT.md` § PR body. Fill **Why** and **What**. The **Attestation id**
-  section gets `Attestation id: {{ATTESTATION_ID}}`. Tick only the
-  Checklist boxes you ran; leave the rest unticked and say why in the
-  body. Save it as `.gleam-scan/rounds/<area>/pr-<n>.md` in the scan
-  checkout.
-- Low details may be public. Medium-and-above details never go in a PR,
-  even one that fixes them.
-
-**Advisory draft.** Start with a `Title:` line, written as `REPORT.md`
-§ Advisory title gives it: who can do it and what the user loses, in the
-user's words. Then write the description in the shape `REPORT.md` gives:
-a plain **Summary** of about 100 words at reading grade 6 to 7, the
-`Attestation id: {{ATTESTATION_ID}}` line, then `<details>` with
-**Impact**, **Steps**, an optional **Fix** and the triager's evidence.
-Write a fix for every finding you draft, if you can. For an advisory,
-write it in a worktree as for a PR draft, run its tests, and put
-`git diff origin/master` in **Fix** as a `diff` block. Never push it or
-open a PR for it. A fix that merges earns a 1% bonus.
-
 **Fix-bonus lines.** After a round's `pnpm scan finish` passes, write
-one line per finding draft above its round offer, and nothing for a
-hardening, skill or surface PR:
+one line per advisory draft above its round offer:
 
-- with a fix: `<Advisory|PR> <n> includes a fix. If it merges, it earns a 1% fix bonus.`
+- with a fix: `Advisory <n> includes a fix. If it merges, it earns a 1% fix bonus.`
 - without one: `Advisory <n> has no fix yet. Reply "fix <n>" and I'll write one: a fix that merges earns a 1% bonus.`
-Give the evidence from the verdict once: demonstrated, traced, or the
-exact fact a browser check has to settle.
-Save it as `.gleam-scan/rounds/<area>/advisory-<n>.md`. `pnpm scan
-finish` warns when the part above `<details>` is too long or too hard to
-read.
 
-**Skill or surface PR.** This skill improves through the scans that use
-it. If something would have made your scan better, draft a PR for it, in
-its own worktree like a fix PR, and save its body as
-`.gleam-scan/rounds/<area>/pr-<n>.md`. For example:
+Then, if the round has any advisory draft, one more line:
+`The best finding of each review round earns an extra 5% of the pool.`
 
-- a file that belongs in `security/surface.txt`. Add it at its tier, and
-  add the same path to `.github/CODEOWNERS` (a test keeps the two
-  identical);
-- an area, check, search or tool that `CHECKS.md` should name;
-- a reason to refute, or a severity example, that `VERIFY.md` should
-  give;
-- a command in this skill that failed or misled you, or a `✗` message
-  that didn't say what to do;
-- a test that failed because of the test code (Step 3). Fix the test,
-  not the code under it, and title the PR `test(<scope>): <what it
-  fixes>`.
-
-Title any other one `docs(scan): <what it improves>`, and fill the
-template's **Why** with what happened in your scan. Keep it general: a
-skill PR never describes a vulnerability, not even a low one. If it comes
-from a medium or higher finding (a surface entry alone points at the
-bug), don't file it until the advisory is fixed. It doesn't change
-`result`. A maintainer reviews it like any other PR, and nothing merges
-automatically.
-
-Done when you have considered at least one PR candidate, and every
-surviving finding and real PR candidate has a draft in the round folder.
-If nothing survived Step 6, that's a clean round.
+Done when every finding that survived at Medium or above has a draft in
+the round folder. If none did, that's a clean round.
 
 ## Step 8: Answer the challenge and finish the round
 
@@ -617,18 +595,18 @@ Fill it in field by field:
     using the `lines <start>-<end>` that `pnpm scan start` printed.
   - `check`: one sentence, 10 to 300 characters, on one line, on what that
     check prevents. Write it from what you read, about this code.
-- `result`: `"scanned"` if the round folder has an advisory draft, or a
-  fix or hardening PR draft; otherwise `"pass"`. A skill, surface or
-  test-fix PR doesn't count either way. It never says what you found, and
-  both earn the same.
+- `result`: `"scanned"` if the round folder has an advisory draft;
+  otherwise `"pass"`. It never says what you found, and both earn the
+  same.
 - `report`: markdown, at most 20,000 characters, `\n` line endings. It
   describes **coverage only**: the area this round covered, what you
   checked, what you didn't, the tools you ran and their outcome in
   general terms (from `.gleam-scan/setup.md`), how many candidates Step 6
   verified and whether subagents verified them, and how long the round
   took (from the `Started:` time `pnpm scan start` printed to `date -u`).
-  Never vulnerability details, not even for a low finding. "Drafted 1 PR
-  and 1 advisory" is fine. What they are about is not.
+  Never vulnerability details, not even for a Low finding. "Drafted 1
+  advisory and dropped 2 Low findings" is fine. What they are about is
+  not.
 
 ### 8b. Run `pnpm scan finish` until it passes
 
@@ -658,8 +636,11 @@ When every area has a round in this checkout, the message offers only
 Round 5 (Build and release) is ready. Every area of v<release> is done in this checkout. Reply "file" to sign the 5 rounds and file 3 reports.
 ```
 
-A line starting with `!` names a draft advisory whose title or summary
-breaks `REPORT.md`. It never fails the run. Fix the draft; you don't need
+A `✗` line naming an `advisory-*.md` is a rating line, fix location or
+test the draft is missing or gets wrong (`REPORT.md` § Rating lines).
+Fix the draft and run `finish` again. A line starting with `!` names a
+draft advisory whose title or summary breaks `REPORT.md`. It never fails
+the run. Fix the draft; you don't need
 to run `finish` again.
 
 `finish` rewrites the attestation with `release` and `commit` filled in.
@@ -668,7 +649,7 @@ It doesn't use up the challenge.
 
 End your turn with the round offer, as Closing messages says. Write
 nothing above it but a `Warning:` line `finish` printed, the fix-bonus
-lines (Step 7), or the new-session line (Subagents).
+and best-finding lines (Step 7), or the new-session line (Subagents).
 
 ## Replies
 
@@ -695,7 +676,7 @@ the sign request:
 3 rounds are ready to sign, with 4 reports to file.
 
 1. Open this link and sign each round in Gleam: https://gleamwallet.app/attest.html#<payload>.<payload>.<payload>
-2. Reply "signed" and I'll file the reports: fork, push, open each PR and file each advisory.
+2. Reply "signed" and I'll file the reports: file each advisory as a private report on GitHub.
 ```
 
 For rounds with no reports, line 2 is `2. Reply "signed" when you're
@@ -774,18 +755,17 @@ after that line.
 ## File the reports
 
 The user's "signed" answers the sign request, which named each of these
-actions, so it is the approval the scan prompt asks for: fork, push, open
-each PR and file each advisory of the rounds `pnpm scan next` lists as
-signed. Don't ask again. For each such round:
+actions, so it is the approval the scan prompt asks for: file each
+advisory of the rounds `pnpm scan next` lists as signed. Don't ask
+again. For each such round:
 
-1. In each `pr-*.md` and `advisory-*.md` in its round folder that its
-   `filed.txt` doesn't list, replace `{{ATTESTATION_ID}}` with the
-   round's attestation id from `next`. Only a skill PR that Step 7 says
-   to hold for an unfixed advisory waits.
+1. In each `advisory-*.md` in its round folder that its `filed.txt`
+   doesn't list, replace `{{ATTESTATION_ID}}` with the round's
+   attestation id from `next`.
 2. File it, as below.
 3. Append a line to the round folder's `filed.txt`: the draft's file name,
-   a space, then its link, such as `pr-1.md
-   https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet/pull/12`.
+   a space, then its link, such as `advisory-1.md
+   https://github.com/skyf0xx/gleam-arweave-ao-hyperbeam-wallet/security/advisories/GHSA-xxxx-xxxx-xxxx`.
    For a draft you hand to the user instead, write `handed-over` in place
    of the link.
 4. Each draft that `filed.txt` listed before this step was filed without
@@ -793,31 +773,12 @@ signed. Don't ask again. For each such round:
    already ends with `id-added`:
    - In the draft, replace the line `Attestation id: none (not signed)`
      with `Attestation id: <id>`.
-   - For a PR, update its body: `gh pr edit <PR number from its link>
-     --repo skyf0xx/gleam-arweave-ao-hyperbeam-wallet --body-file
-     .gleam-scan/rounds/<area>/pr-<n>.md`.
-   - For an advisory, post a comment on it with the line
+   - Post a comment on the advisory with the line
      `Attestation id: <id>`. If you can't, give the user that line to
      post, above the closing message.
    - Append ` id-added` to its line in `filed.txt`.
 
 Don't edit a round's `attestation.json` after the user signs it.
-
-**File a PR** (needs `gh` signed in to the user's GitHub account). If the
-user can push to the repository, skip the fork: `git push origin HEAD` and
-pass `--head fix/security-<short-name>`.
-
-```bash
-cd ../gleam-fix-<short-name>
-gh repo fork --remote --remote-name fork      # forks origin, adds the fork as remote "fork"
-git push fork HEAD
-gh pr create --repo skyf0xx/gleam-arweave-ao-hyperbeam-wallet --base master \
-  --head <your-github-login>:fix/security-<short-name> --title "fix(security): <what it fixes>" \
-  --body-file ../gleam-scan/.gleam-scan/rounds/<area>/pr-<n>.md
-```
-
-In the body, the template's `## Attestation id` section holds the line
-`Attestation id: <id>`.
 
 **File a private advisory** (the private vulnerability report from
 `SECURITY.md`): open
@@ -827,12 +788,15 @@ or with `gh`:
 ```bash
 gh api repos/skyf0xx/gleam-arweave-ao-hyperbeam-wallet/security-advisories/reports \
   -f summary="$(sed -n '1s/^Title: *//p' .gleam-scan/rounds/<area>/advisory-<n>.md)" \
-  -f severity="<low|medium|high|critical>" \
+  -f severity="$(sed -n 's/^Severity: *//p' .gleam-scan/rounds/<area>/advisory-<n>.md | head -1)" \
   -f description="$(sed 1d .gleam-scan/rounds/<area>/advisory-<n>.md)"
 ```
 
 The title comes from the draft's `Title:` line, and the description is
-everything under it, including the line `Attestation id: <id>`.
+everything under it, including the line `Attestation id: <id>` and the
+rating lines. GitHub limits how many reports one account can file in a
+day. If it answers that you've reached the limit, file the rest later
+and tell the user which are still to file: waiting costs nothing.
 
 If you can't file (no `gh`, or the user would rather do it), give the user
 each draft above the closing message, ready to paste, with the id already
@@ -856,18 +820,18 @@ For each round, after Step 1:
 2. **Verify.** For each candidate in the summary, start a fresh verifier
    as Step 6 says. Act on the verdicts as Step 6's table says, then do
    Step 6's master check yourself.
-3. **Draft.** For each candidate that survived, pick its file name: a
-   verdict severity of low or informational gets `pr-<n>.md`, medium and
-   above, or a finding master already fixes, `advisory-<n>.md`. Number from 1 above the highest number of that
-   kind already in the round folder or given to another draft subagent,
-   so no two drafts share a name. Then start a fresh subagent with only
-   this prompt, filled in:
+3. **Draft.** Drop each candidate whose verdict severity is low or none.
+   For each that survived at medium or above, pick its file name,
+   `advisory-<n>.md`, numbered from 1 above the highest number already in
+   the round folder or given to another draft subagent, so no two drafts
+   share a name. Then start a fresh subagent with only this prompt,
+   filled in:
 
    > In the Gleam checkout at <absolute checkout path>, follow § Draft brief in security/scan/SKILL.md for the candidate .gleam-scan/rounds/<area>/candidates/<n>.md, with this verdict: <the verdict block>. Save the draft as .gleam-scan/rounds/<area>/<file name>.
 
    You can run several at once. Each returns one line.
 4. **Finish.** Set `result` in the round's attestation (Step 8a) from the
-   PR types and advisories the subagents returned, and add one line to
+   advisories the subagents returned, and add one line to
    `report` saying how many candidates fresh subagents verified. Run
    `pnpm scan finish` (Step 8b) and end the turn with its round offer.
 
@@ -891,7 +855,7 @@ id.
 
 1. `cd` into the checkout. Read § Rules that always apply. Its last rule,
    § Closing messages and § Replies are for the coordinating agent, not
-   you: you end with the block in step 7 and nothing else. Don't run any
+   you: you end with the block in step 6 and nothing else. Don't run any
    `pnpm scan` command, move `HEAD`, commit, push or file anything.
 2. Read `.gleam-scan/setup.md`, the round folder's `area-files.txt`, and
    the 3 functions in its `challenge.json`.
@@ -899,20 +863,15 @@ id.
    `leads.md`.
 4. Follow the first paragraph of Step 6: write the candidate notes in the
    round folder's `candidates/`. Don't verify them.
-5. Follow Step 7 for PR candidates that come from no finding: a test that
-   pins a security property, a surface entry, a skill change, a test fix.
-   Save each body as `pr-<n>.md` in the round folder. Don't draft the
-   candidates.
-6. Follow Step 8a for the round folder's `attestation.json`: `answers`,
+5. Follow Step 8a for the round folder's `attestation.json`: `answers`,
    `model` (the id you were given) and `report`. Leave `result` as it is.
-7. Return only this block, at most 10 lines, with no vulnerability
+6. Return only this block, at most 10 lines, with no vulnerability
    details:
 
    ```text
    Round: <area>
    Reviewed: <n> of <m> area files; not reached: <files, or none>
    Candidates: <candidates/1.md, candidates/2.md, …, or none>
-   PR drafts: <pr-1.md (hardening|surface|skill|test fix), …, or none>
    Attestation: answers, model and report filled
    Problems: <one line, or none>
    ```
@@ -929,11 +888,10 @@ file name to save the draft as.
    `pnpm scan` command, move the checkout's `HEAD`, push or file anything.
 2. Apply the verdict as Step 6's table says.
 3. Read `security/scan/REPORT.md`, then follow Step 7 for this candidate
-   at the verdict's severity: a PR (with its fix in a worktree) for low
-   or informational, an advisory for medium and above. Save it under the
-   file name you were given, and no other.
-4. Return only one line: `<file name> (fix|hardening|advisory
-   <severity>)`, plus `; worktree <path>` for a PR.
+   at the verdict's severity, with its fix in a worktree. Save it under
+   the file name you were given, and no other.
+4. Return only one line: `<file name> (advisory <severity>)`, plus
+   `; fix in <worktree path>` if you wrote one.
 
 ## Report like a working security engineer
 
@@ -941,13 +899,13 @@ file name to save the draft as.
   the threat model, and concrete steps from the attacker's access to the
   harm. An attack that needs a compromised OS, malware, or the user's
   password is out of scope.
-- Rate severity with the anchors in `VERIFY.md`: by what you showed, not
-  the worst case you can imagine.
+- Rate severity with the three questions in `SECURITY.md` § Severity: by
+  what you showed, not the worst case you can imagine.
 - Missing defence in depth is not a finding unless it enables a real
   attack.
 - Say once whether a finding was demonstrated, traced or needs a browser
   check, then write plainly.
-- Write every advisory and PR body as `REPORT.md` says: short on top,
+- Write every advisory as `REPORT.md` says: short on top, rating lines,
   detail in `<details>`.
 - A clean `pass` earns the same as `scanned`. Padding a report with weak
   findings earns nothing.
@@ -991,9 +949,9 @@ are illustrative; use the ones from your own challenge and checkout.
 }
 ```
 
-For a round that drafted a PR and an advisory, `result` is `"scanned"`
-and the report says, for example, "Drafted 1 PR and 1 private advisory",
-with nothing about what they contain.
+For a round that drafted an advisory, `result` is `"scanned"` and the
+report says, for example, "Drafted 1 private advisory and dropped 1 Low
+finding", with nothing about what they contain.
 
 ## Troubleshooting
 
@@ -1043,7 +1001,7 @@ If the user reports an error from the signing page:
 - "expired" or "already used": run `pnpm scan file`. Its `✗` line names
   the round to answer again.
 - "already scanned the <label> area": this wallet scanned that area
-  elsewhere. Move that round's `pr-*.md` and `advisory-*.md` into another
+  elsewhere. Move that round's `advisory-*.md` into another
   waiting round's folder under free numbers, delete its folder
   (`rm -r .gleam-scan/rounds/<area>`), and run `pnpm scan file`.
 - "has scanned every area": this wallet has scanned the whole release.

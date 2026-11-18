@@ -21,7 +21,8 @@ Re-read every line it cites, and look for what it missed.
 - Never use a seed phrase, a real key, a real wallet, or real funds.
 - Don't move the checkout's `HEAD`, commit, push, or file anything.
 - Don't publish anything about the candidate anywhere.
-- A throwaway test you write is deleted before you finish.
+- A test you write is copied into the verdict and deleted from the
+  checkout before you finish.
 
 ## 1. Read the candidate and the threat model
 
@@ -83,7 +84,8 @@ the harm, for example one that feeds the malformed input to the function
 and asserts on what comes back. Run it with
 `pnpm vitest run <path-fragment>`. A test that shows the harm makes the
 finding **demonstrated**. Stop at the smallest effect that proves the
-point. Delete the test when you are done.
+point. Copy the test into the verdict's **Test**, then delete it from the
+checkout. A Medium-or-above advisory can't be filed without it.
 
 Some facts can't be shown in a unit test: how Chrome routes a message,
 what a real browser renders, whether a permission prompt appears. If the
@@ -97,11 +99,16 @@ Rate by what you showed under realistic conditions, not the worst case
 you can imagine. The severity can't be higher than the harm you
 demonstrated.
 
-Use the levels in [SECURITY.md § Severity](../../SECURITY.md#severity).
+Answer the three questions in
+[SECURITY.md § Severity](../../SECURITY.md#severity) from what you
+showed: the attacker, the loss and what it requires. The table there
+gives the severity. Don't pick the severity first and the answers to
+fit it.
 
-To tell high from medium, ask: does it fully defeat a control for an
-action with real consequences, or only weaken it? If you can't state
-the concrete damage, the severity is lower than it feels.
+- If the test shows no loss from the list, the loss is `none` and the
+  finding is Low.
+- If you're unsure between two answers, pick the one your test shows.
+  A report rated above what it shows loses its scan points.
 
 For a finding that needs a browser check, give the severity it would
 have if the check comes out the bad way, and say it is unconfirmed.
@@ -114,10 +121,15 @@ place:
 ```text
 Candidate: <n>
 Verdict: holds | holds, weaker | needs a browser check | refuted
-Severity: critical | high | medium | low | informational | none
+Severity: critical | high | medium | low | none
+Attacker: <a row of docs/THREAT_MODEL.md § Attackers>
+Loss: key | unapproved | mismatch | control | disclosure | lockout | none
+Requires: none | one-click | unusual
+Fix location: <file>#<function a fix has to change>
 Evidence: demonstrated | traced | needs a browser check: <the exact fact>
 Reason: <one to three sentences: what you checked, and what settled it>
 Corrections: <a changed field from step 2, with the reason, or "none">
+Test: <the test, as a ts code block, or "none">
 ```
 
 `holds, weaker` means the finding is real at a lower severity or a
