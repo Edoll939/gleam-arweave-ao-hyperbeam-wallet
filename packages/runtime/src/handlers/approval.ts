@@ -419,6 +419,12 @@ interface PendingApprovalRecord {
   siteIcon?: string | null;
   /** Set by `resolveApproval` immediately before the record is removed. */
   outcome?: ApprovalOutcome;
+  /**
+   * Set, in its own write, just before an approval's work runs. Its work
+   * may post a transfer, so a record still carrying it after a worker
+   * restart is never run again: the first run may already have posted.
+   */
+  attempted?: true;
   /** Set once a hardware wallet's request is approved and waits for the device. */
   device?: PendingDeviceSigning;
 }
@@ -1255,6 +1261,10 @@ export class ApprovalHandler {
             if (!(await this.lapsedSince(entry))) return view;
             outcome = DISCONNECTED_OUTCOME;
           } else {
+            if (entry.attempted) throw new Error(userErrorMessage("approvalResolving", { id: req.requestId }));
+            await this.updatePending((current) =>
+              current.map((candidate) => (candidate.request.requestId === req.requestId ? { ...candidate, attempted: true as const } : candidate)),
+            );
             result = await this.finalizeApproval(entry);
             outcome = await this.withheldIfLapsed(entry, { approved: true, result: toStored(result) });
           }

@@ -1710,6 +1710,40 @@ describe("ApprovalHandler: transferAoTokens signing approval", () => {
     await expect(pending).resolves.toEqual({ id: "ao-message-id-123" });
   });
 
+  it("never runs an approval again when a restart cut its first run short", async () => {
+    storage = createWatchableStorage();
+    await seedGrant(storage);
+    presenter = createFakePresenter();
+    // The first run posts, then the worker stops before the outcome is written.
+    const submitTransfer = vi.fn(() => new Promise<{ txId: string }>(() => {}));
+    const handler = new ApprovalHandler(storage, keySession, presenter, { submitTransfer });
+    await seedWallet(storage);
+    await cacheKey(WALLET_ID, await sharedJwk(), "abc-address");
+
+    const pending = handler.requestApproval({
+      kind: "transferAoTokens",
+      origin: "https://bazar.arweave.net",
+      walletId: WALLET_ID,
+      recipient: "recipient-addr",
+      amount: "1000",
+      fee: null,
+      token: "ao-process-id",
+      payload: new Uint8Array(),
+      tags: [],
+    });
+    void pending.catch(() => {});
+    await vi.waitFor(() => expect(presenter.presented.length).toBe(1));
+    const requestId = presenter.presented[0]!;
+    void handler.resolveApproval({ requestId, approved: true });
+    await vi.waitFor(() => expect(submitTransfer).toHaveBeenCalledTimes(1));
+
+    // A fresh handler, as a restarted worker would create it.
+    const fresh = new ApprovalHandler(storage, keySession, presenter, { submitTransfer });
+
+    await expect(fresh.resolveApproval({ requestId, approved: true })).rejects.toThrow(/already being resolved/);
+    expect(submitTransfer).toHaveBeenCalledTimes(1);
+  });
+
   it("rejecting a transferAoTokens request never calls the submitter", async () => {
     storage = createWatchableStorage();
     await seedGrant(storage);
