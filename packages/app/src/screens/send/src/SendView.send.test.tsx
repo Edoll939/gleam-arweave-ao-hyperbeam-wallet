@@ -6,7 +6,7 @@ import { addressText } from "@gleam/ui/src/components/wallet/MemorableAddress.te
 import { PlatformProvider } from "../../../app-platform/context";
 import { fakeAppPlatform } from "../../../app-platform/testing";
 import { DEFAULT_AO_TOKEN } from "@gleam/ui";
-import { SendView, type SendViewProps } from "./SendView";
+import { namedSuggestions, SendView, type SendViewProps } from "./SendView";
 
 afterEach(() => {
   cleanup();
@@ -1087,5 +1087,29 @@ describe("SendView fee quote", () => {
 
     const estimates = vi.mocked(send).mock.calls.filter(([message]) => (message as { type: string }).type === "estimateTransfer");
     expect(estimates).toHaveLength(1);
+  });
+});
+
+describe("namedSuggestions", () => {
+  const sent = (address: string, timestamp: number) =>
+    ({ txId: `tx-${timestamp}`, type: "send", status: "confirmed", address, amount: "1", tags: [], timestamp }) as unknown as ActivityPage["entries"][number];
+
+  it("puts your own wallets after contacts, each group most recently sent to first", () => {
+    const contacts = [
+      { address: "c1", name: "Alice" },
+      { address: "c2", name: "Bob" },
+    ] as Contact[];
+    const wallets = [
+      { address: "w1", name: "Glint" },
+      { address: "w2", name: "Phone Node" },
+    ] as WalletSummary[];
+    const activity: ActivityPage = { entries: [sent("w2", 3), sent("c2", 2), sent("w1", 1)], cursor: null };
+
+    expect(namedSuggestions(contacts, wallets, activity).map((named) => [named.name, named.own])).toEqual([
+      ["Bob", false],
+      ["Alice", false],
+      ["Phone Node", true],
+      ["Glint", true],
+    ]);
   });
 });

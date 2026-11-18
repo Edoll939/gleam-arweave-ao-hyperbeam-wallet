@@ -24,6 +24,14 @@
 .i-hero .line { max-width: 28em; }
 .i-cta { margin: 32px 0 0; }
 .i-cta.i-open-app { margin-top: 16px; }
+/* Second to Get Gleam: the same size, without the fill */
+.ink .i-cta .button-quiet { background: transparent; color: var(--on-ink); }
+.ink .i-cta .button-quiet:hover { background: rgba(255, 255, 255, .08); }
+/* A tap leaves :hover stuck on a phone, which read as a pressed button */
+@media (hover: none) {
+  .ink .i-cta .button:hover { background: var(--on-ink); transform: none; }
+  .ink .i-cta .button-quiet:hover { background: transparent; }
+}
 .ink .i-bonus { margin: 24px 0 0; color: var(--on-ink); font-weight: 600; }
 .i-hero .invite-sub { margin-top: 36px; font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -0.03em; }
 .i-hero .small strong { color: var(--on-ink); font-family: var(--mono); letter-spacing: .04em; }

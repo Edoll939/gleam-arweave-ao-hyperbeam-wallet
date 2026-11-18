@@ -262,7 +262,10 @@
     var away = "cubic-bezier(.7, 0, 1, .5)";
 
     // A rising run of glass pings across the launch: a sparkle, not a hit.
-    // Raised past the page's quiet note level, as the gate's tap is.
+    // Raised past the page's quiet note level, as the gate's tap is. Leaving
+    // the page stops its audio, and a phone can take a few hundred ms to start
+    // a fresh audio stream, so the cut to gleam.html waits for the run to ring.
+    var rung = wait(1300);
     program.enableSound(function () {
       program.loud(function () {
         [2, 4, 7, 9, 12, 14].forEach(function (step, i) {
@@ -298,7 +301,7 @@
         return wait(340);
       })
       .then(function () {
-        return anim(black, [{ opacity: 0 }, { opacity: 1 }], { duration: 160 }).finished;
+        return Promise.all([anim(black, [{ opacity: 0 }, { opacity: 1 }], { duration: 160 }).finished, rung]);
       })
       .then(function () {
         window.location.href = href;
