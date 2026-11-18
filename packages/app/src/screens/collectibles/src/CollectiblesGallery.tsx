@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { collectibleKind, type Collectible } from "@gleam/core";
-import { CollectibleThumbnail, EmptyState, SkeletonTile } from "@gleam/ui/src/components/wallet/index.ts";
+import { CollectibleThumbnail, EmptyState } from "@gleam/ui/src/components/wallet/index.ts";
 import { cn } from "@gleam/ui/src/primitives/cn.ts";
 import { useT } from "../../../i18n";
 
@@ -88,12 +88,11 @@ export function CollectiblesGallery({ items, loading, onOpen }: CollectiblesGall
       <div className="flex flex-col gap-4">
         <div className="flex gap-2">
           {Array.from({ length: 5 }, (_, key) => (
-            <div key={key} className="w-14 shrink-0">
-              <SkeletonTile />
-            </div>
+            <div key={key} className="aspect-square w-14 shrink-0 gleam-shimmer rounded-lg" />
           ))}
         </div>
-        <SkeletonTile />
+        <div className="aspect-square w-full gleam-shimmer rounded-2xl" />
+        <div className="h-[13px] w-[40%] gleam-shimmer rounded-md" />
       </div>
     );
   }

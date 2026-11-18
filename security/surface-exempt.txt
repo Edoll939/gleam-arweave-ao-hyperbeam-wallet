@@ -112,7 +112,6 @@ packages/ui/src/components/wallet/chart-path.ts Wallet, balance and activity dis
 packages/ui/src/components/wallet/QrCode.tsx Wallet, balance and activity display outside the approval preview.
 packages/ui/src/components/wallet/SendReceiveActions.tsx Wallet, balance and activity display outside the approval preview.
 packages/ui/src/components/wallet/SkeletonRow.tsx Wallet, balance and activity display outside the approval preview.
-packages/ui/src/components/wallet/SkeletonTile.tsx Wallet, balance and activity display outside the approval preview.
 packages/ui/src/components/wallet/TokenGlyph.tsx Wallet, balance and activity display outside the approval preview.
 packages/ui/src/components/wallet/TokenRow.tsx Wallet, balance and activity display outside the approval preview.
 packages/ui/src/components/wallet/WatchOnlyBadge.tsx Wallet, balance and activity display outside the approval preview.
