@@ -392,6 +392,14 @@ describe("key-session", () => {
       expect(store.has("session:cachedWalletIds")).toBe(false);
     });
 
+    it("cacheKey leaves no key in the keyring when its session entry can't be written", async () => {
+      vi.spyOn(storage, "set").mockRejectedValueOnce(new Error("session storage error"));
+
+      await expect(cacheKey("wallet-a", jwkA, "address-a")).rejects.toBeInstanceOf(SessionKeyStorageError);
+
+      expect(await heldKeys()).toEqual([]);
+    });
+
     it("cacheKey reports a session entry that can't be written as a storage error", async () => {
       vi.spyOn(storage, "set").mockRejectedValueOnce(new Error("session storage error"));
 
