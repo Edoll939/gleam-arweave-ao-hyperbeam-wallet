@@ -69,6 +69,21 @@ describe("TagTiers on the signing approval screen", () => {
     expect(screen.getByText(/expected ao\.TN\.1 \/ ao\.N\.1/)).toBeTruthy();
   });
 
+  it("shows no headline, and both copies, when Type carries conflicting case-variant copies", () => {
+    const { container } = renderItems([
+      item(
+        [
+          { name: "Type", value: "Process" },
+          { name: "type", value: "Other" },
+        ],
+        null,
+      ),
+    ]);
+    expect(container.querySelector(".text-h3")).toBeNull();
+    expect(screen.getByText("Process")).toBeTruthy();
+    expect(screen.getByText("Other")).toBeTruthy();
+  });
+
   it("numbers the items of a request that signs more than one", () => {
     renderItems([item([{ name: "Action", value: "A" }], null), item([{ name: "Action", value: "B" }], null)]);
     expect(screen.getByText("Item 1")).toBeTruthy();
