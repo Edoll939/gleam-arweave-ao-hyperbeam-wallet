@@ -265,3 +265,10 @@ if [ "$target" = android-apk ]; then
 
 Android APK \`gleam.apk\` SHA-256: \`$apk_sha\`" > /dev/null || exit 1
 fi
+
+# pack-release.sh runs first in the same chain and its "Wrote" line scrolls
+# away under the fastlane output, so name the .crx again at the very end.
+if [ -f "$repo_root/$tag.crx" ]; then
+  echo
+  echo "Chrome Web Store upload: $repo_root/$tag.crx"
+fi
