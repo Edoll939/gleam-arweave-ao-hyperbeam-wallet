@@ -14,6 +14,7 @@ import {
   WATCH_ONLY_CONNECT_REFUSAL,
 } from "@gleam/core";
 import { resolveInitialGatewayUrl } from "@gleam/core/src/arweave/first-run-gateway.ts";
+import { impersonatesRegisteredToken, isRegisteredProcessId } from "@gleam/core/src/pricing/index.ts";
 import { estimateL1TransferFee } from "@gleam/core/src/ao/l1-transfer.ts";
 import { isSecureSigningOrigin } from "@gleam/core/src/policy/index.ts";
 import type { ProtocolMap } from "@gleam/messaging/src/protocol.ts";
@@ -61,7 +62,7 @@ import type { Platform } from "./platform";
 import { userErrorMessage } from "@gleam/core/src/models/user-errors.ts";
 import { NETWORK_SETTINGS_KEY } from "./storage-keys";
 import { dappError } from "./dapp-error";
-import { createProviderHandlers, type ApprovalCall, type GrantedCall } from "./handlers/provider";
+import { createProviderHandlers, type ApprovalCall, type GrantedCall, type TokenPreview } from "./handlers/provider";
 
 /**
  * What a shell's transport and lifecycle events reach the wallet through.
@@ -390,25 +391,37 @@ export function createRuntime(platform: Platform): Runtime {
     return { tokenDenomination, tokenTicker };
   }
 
-  /** As `resolveTokenDenominationAndTicker`, and whether the process is a collectible rather than a token. */
+  /**
+   * As `resolveTokenDenominationAndTicker`, whether the process is a
+   * collectible rather than a token, and whether it copies a registered
+   * token's ticker or name.
+   */
   async function resolveTokenPreview(
     address: string,
     processId: string,
-  ): Promise<{ tokenDenomination: number | null; tokenTicker: string | null; collectible: boolean }> {
-    const UNRESOLVED = { tokenDenomination: null, tokenTicker: null, collectible: false };
+  ): Promise<TokenPreview> {
+    const UNRESOLVED: TokenPreview = { tokenDenomination: null, tokenTicker: null, collectible: false, impersonating: false };
     const lookup = reads
       .previewWatchedToken({ address, processId })
       .then((balance) =>
         balance.available === false
           ? UNRESOLVED
-          : { tokenDenomination: balance.denomination, tokenTicker: balance.ticker, collectible: false },
+          : {
+              tokenDenomination: balance.denomination,
+              tokenTicker: balance.ticker,
+              collectible: false,
+              // As `addWatchedToken` refuses: a process may name itself anything.
+              impersonating:
+                !isRegisteredProcessId(processId) &&
+                impersonatesRegisteredToken({ ticker: balance.ticker, name: balance.name }),
+            },
       )
       .catch((error: unknown) =>
         error instanceof Error && error.message === userErrorMessage("tokenIsCollectible")
           ? { ...UNRESOLVED, collectible: true }
           : UNRESOLVED,
       );
-    const timeout = new Promise<typeof UNRESOLVED>((resolve) =>
+    const timeout = new Promise<TokenPreview>((resolve) =>
       setTimeout(() => resolve(UNRESOLVED), TOKEN_METADATA_LOOKUP_TIMEOUT_MS),
     );
     return Promise.race([lookup, timeout]);

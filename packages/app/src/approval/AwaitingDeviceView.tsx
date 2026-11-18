@@ -36,7 +36,7 @@ export interface AwaitingDeviceViewProps {
   onCancel: () => void;
   onActivity: () => Promise<unknown>;
   /** The preview's resolved token scale, used for an AO transfer of that token. */
-  token?: { processId: string; denomination: number | null; ticker: string | null };
+  token?: { processId: string; denomination: number | null; ticker: string | null; impersonating?: true };
   /** The preview's collectible, named and pictured when the payload sends that asset. */
   collectible?: CollectibleRef | null;
   /** The signing wallet; defaults to the device's address alone. */

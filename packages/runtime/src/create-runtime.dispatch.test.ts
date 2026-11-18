@@ -312,6 +312,51 @@ describe("createRuntime", () => {
       expect(more.collectible).toBeUndefined();
     });
 
+    it("a dApp's transfer of a token named like a registered one is flagged, and of another token is not", async () => {
+      stubLyingGateway();
+      const gateway = globalThis.fetch;
+      // The ticker is shown only once the token's balance reads.
+      globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
+        String(input).includes("/now/as/balance") ? new Response("1000") : gateway(input, init),
+      ) as unknown as typeof fetch;
+      const { runtime, storage, present } = await setupGranted();
+      const metadata = (processId: string, ticker: string, name: string) =>
+        storage.set(`local:tokenMetadata:${processId}`, {
+          processId,
+          transport: "l1",
+          assetClass: "fungible",
+          denomination: 12,
+          ticker,
+          name,
+          description: null,
+          logo: null,
+          totalSupply: null,
+        });
+      const fake = "f".repeat(43);
+      const plain = "t".repeat(43);
+      await metadata(fake, "AO", "AO");
+      await metadata(plain, "TKN", "Token");
+      const previewOfTransfer = async (token: string) => {
+        const pending = runtime.dispatch(
+          "providerCall",
+          { method: "transferAoTokens", params: { token, recipient: "r".repeat(43), amount: "5" } },
+          CONTENT_SCRIPT,
+        );
+        void (pending as Promise<unknown>).catch(() => {});
+        await vi.waitFor(() => expect(present).toHaveBeenCalled());
+        const requestId = present.mock.calls[0]![0];
+        const request = (await runtime.dispatch("getApproval", { requestId }, EXTENSION)) as { preview: Record<string, unknown> };
+        await runtime.dispatch("resolveApproval", { requestId, approved: false }, EXTENSION);
+        present.mockClear();
+        return request.preview;
+      };
+
+      expect(await previewOfTransfer(fake)).toMatchObject({ token: fake, tokenTicker: "AO", tokenImpersonating: true });
+      const other = await previewOfTransfer(plain);
+      expect(other).toMatchObject({ token: plain, tokenTicker: "TKN" });
+      expect(other.tokenImpersonating).toBeUndefined();
+    });
+
     it("a dApp's sign of 1 unit of a fungible token shows the token", async () => {
       const token = "t".repeat(43);
       const preview = await previewOfSign({

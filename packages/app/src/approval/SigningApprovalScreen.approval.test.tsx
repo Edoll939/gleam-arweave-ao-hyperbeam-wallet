@@ -185,6 +185,26 @@ describe("SigningApprovalScreen transfer layout: AO token", () => {
     expect(screen.getByText(HIDDEN_AMOUNT)).toBeTruthy();
   });
 
+  it("warns about a token that copies a registered token's name, and shows its full process id", () => {
+    renderScreen({ preview: { ...AO_PREVIEW, token: WAR, tokenImpersonating: true } });
+    expect(screen.getByText("This token copies a known token's name or ticker.")).toBeTruthy();
+    expect(screen.getByText(WAR)).toBeTruthy();
+    expect(primary("Sign").className).toContain("bg-warning");
+  });
+
+  it("warns the same for a data item's transfer", () => {
+    const item = {
+      decodedData: null,
+      tags: [{ name: "Action", value: "Transfer" }],
+      target: WAR,
+      payloadHash: "2b8e5f0a3c6d9b2e5a8f1c4d7b0e3a6c9f2b5d8e1a4c7f0b3d6e9a2c1a9d4f7c",
+      transfer: { token: WAR, recipient: RECIPIENT, amount: "1", tokenDenomination: 12, tokenTicker: "AO", tokenImpersonating: true as const },
+    };
+    renderScreen({ preview: { ...MESSAGE_PREVIEW, items: [item] } });
+    expect(screen.getByText("This token copies a known token's name or ticker.")).toBeTruthy();
+    expect(screen.getByText(WAR)).toBeTruthy();
+  });
+
   it("names a token by its shortened id when its ticker only echoes the id back", () => {
     renderScreen({ preview: { ...AO_PREVIEW, token: WAR, tokenTicker: WAR }, context: {} });
     expect(screen.getAllByText("WWWWWW…WWWW").length).toBeGreaterThan(0);

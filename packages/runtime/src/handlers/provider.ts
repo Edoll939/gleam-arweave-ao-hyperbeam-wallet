@@ -91,6 +91,8 @@ export interface TokenPreview {
   tokenDenomination: number | null;
   tokenTicker: string | null;
   collectible: boolean;
+  /** The ticker or name copies a registered token's, and the process isn't that token. */
+  impersonating: boolean;
 }
 
 /**
@@ -240,7 +242,7 @@ export function createProviderHandlers(deps: ProviderDeps): ProviderHandlers {
       // amount and a "smallest units" label when either comes back `null`.
       // A collectible's transfer of 1 shows as that collectible, as the
       // L1 path already does, not as 1 unit of an unknown token.
-      const [{ tokenDenomination, tokenTicker, collectible }, fee] = await Promise.all([
+      const [{ tokenDenomination, tokenTicker, collectible, impersonating }, fee] = await Promise.all([
         resolveTokenPreview(wallet.address, token),
         quoteTokenTransferFee(token),
       ]);
@@ -258,6 +260,7 @@ export function createProviderHandlers(deps: ProviderDeps): ProviderHandlers {
         tokenDenomination,
         tokenTicker,
         ...(collectibleRef ? { collectible: collectibleRef } : {}),
+        ...(impersonating ? { tokenImpersonating: true } : {}),
         payload: new Uint8Array(),
         tags: [],
       });
@@ -371,6 +374,7 @@ export function createProviderHandlers(deps: ProviderDeps): ProviderHandlers {
             token: tokenTransfer.processId,
             tokenDenomination: tokenMetadata?.tokenDenomination ?? null,
             tokenTicker: tokenMetadata?.tokenTicker ?? null,
+            ...(tokenMetadata?.impersonating ? { tokenImpersonating: true } : {}),
           }
         : {
             recipient: transaction.target ?? null,

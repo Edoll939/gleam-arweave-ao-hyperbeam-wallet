@@ -84,6 +84,8 @@ export interface SigningApprovalPreview {
    * warning to check its tags.
    */
   unreadableTokenTransfer?: boolean;
+  /** Set when `token`'s ticker or name copies a registered token's, but `token` isn't that token's process. */
+  tokenImpersonating?: true;
   decodedData: string | null;
   /** The signed data's length in bytes, shown when `decodedData` can't show it as text. */
   dataSize?: number;
@@ -129,6 +131,8 @@ export interface DataItemTransferPreview {
   tokenDenomination: number | null;
   tokenTicker: string | null;
   collectible?: CollectibleRef | null;
+  /** See `SigningApprovalPreview.tokenImpersonating`. */
+  tokenImpersonating?: true;
 }
 
 /**
