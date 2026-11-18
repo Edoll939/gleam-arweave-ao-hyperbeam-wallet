@@ -18,9 +18,11 @@ import { dappError } from "../dapp-error";
  * share these checks, so both sign only what the review showed.
  */
 
-const textDecoder = new TextDecoder();
+// A leading byte order mark is signed like any other character, so the
+// device step keeps it, as the approval screen does.
+const textDecoder = new TextDecoder("utf-8", { ignoreBOM: true });
 
-const strictTextDecoder = new TextDecoder("utf-8", { fatal: true });
+const strictTextDecoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 
 /** How much of a message the device step shows; the dApp's preview already showed it in full. */
 const MESSAGE_TEXT_LIMIT = 500;
