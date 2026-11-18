@@ -245,10 +245,13 @@ internal class DappWebView(
         val view = webView ?: return
         val url = view.url ?: return
         val canGoBack = view.canGoBack()
-        val key = "$url\n$canGoBack\n$loading"
+        val title = view.title ?: ""
+        val key = "$url\n$canGoBack\n$loading\n$title"
         if (key == lastNavigation) return
         lastNavigation = key
-        events.navigation(JSObject().put("url", url).put("canGoBack", canGoBack).put("loading", loading))
+        events.navigation(
+            JSObject().put("url", url).put("canGoBack", canGoBack).put("loading", loading).put("title", title),
+        )
     }
 
     /**
@@ -356,6 +359,11 @@ internal class DappWebView(
      * destroyed before anything loads.
      */
     private inner class ChromeClient : WebChromeClient() {
+        override fun onReceivedTitle(view: WebView, title: String?) {
+            if (view !== webView) return
+            emitNavigation()
+        }
+
         override fun onShowFileChooser(
             view: WebView,
             filePathCallback: ValueCallback<Array<Uri>>,

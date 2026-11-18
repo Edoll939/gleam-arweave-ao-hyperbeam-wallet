@@ -70,10 +70,10 @@ describe("createDappBrowser", () => {
     const seen: DappBrowserEvent[] = [];
     const unsubscribe = browser.subscribe((event) => seen.push(event));
     await Promise.resolve();
-    listeners.get("navigation")?.({ url: "https://a.example/", canGoBack: true, loading: false });
+    listeners.get("navigation")?.({ url: "https://a.example/", canGoBack: true, loading: false, title: "A" });
     listeners.get("loadError")?.({ url: "https://b.example/", message: "offline" });
     expect(seen).toEqual([
-      { kind: "navigation", url: "https://a.example/", canGoBack: true, loading: false },
+      { kind: "navigation", url: "https://a.example/", canGoBack: true, loading: false, title: "A" },
       { kind: "loadError", url: "https://b.example/", message: "offline" },
     ]);
     unsubscribe();
