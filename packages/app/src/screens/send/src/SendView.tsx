@@ -1266,7 +1266,8 @@ function defaultAoTokenBalance(walletAddress: string): TokenBalance {
     address: walletAddress,
     processId: DEFAULT_AO_TOKEN.processId as string,
     ticker: DEFAULT_AO_TOKEN.ticker,
-    denomination: 0,
+    // AO's own scale, so an amount typed before the balances load converts right.
+    denomination: 12,
     name: DEFAULT_AO_TOKEN.name,
     quantity: "0",
   };

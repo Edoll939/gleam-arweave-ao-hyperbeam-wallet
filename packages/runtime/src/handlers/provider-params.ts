@@ -44,14 +44,25 @@ export function readBytes(
   name: string,
   strings: "reject" | "utf8" | "base64url" = "reject",
 ): Uint8Array<ArrayBuffer> {
+  // Nothing larger can be approved, so it isn't copied or hashed either.
+  const tooLarge = (bytes: number) => {
+    if (bytes > REQUEST_BYTES_LIMIT) {
+      throw new Error(dappError("Gleam refused this request because it is too large to hold for approval."));
+    }
+  };
   if (ArrayBuffer.isView(value)) {
+    tooLarge(value.byteLength);
     return new Uint8Array(value.buffer, value.byteOffset, value.byteLength).slice();
   }
   if (isArrayBuffer(value)) {
+    tooLarge(value.byteLength);
     return new Uint8Array(value).slice();
   }
+  if (typeof value === "string") tooLarge(value.length);
   if (typeof value === "string" && strings === "utf8") {
-    return new TextEncoder().encode(value);
+    const bytes = new TextEncoder().encode(value);
+    tooLarge(bytes.byteLength);
+    return bytes;
   }
   if (typeof value === "string" && strings === "base64url") {
     try {
