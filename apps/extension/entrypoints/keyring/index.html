@@ -2,6 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- On top of the manifest CSP: this page holds unlocked keys, so it
+         reaches no network. scripts/check-bundles.mjs checks it stays. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'" />
     <title>Gleam — Keyring</title>
   </head>
   <body>

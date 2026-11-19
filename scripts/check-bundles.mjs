@@ -462,6 +462,24 @@ export function closureOf(entry, chunks, lazy = new Set()) {
 }
 
 /**
+ * The keyring page's own CSP, on top of the manifest's: it holds unlocked
+ * keys, so it gets no network, images, frames or forms at all.
+ */
+export const KEYRING_CSP = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'";
+
+/**
+ * Problems with the built keyring page's CSP meta tag.
+ * @param {string} html
+ */
+export function keyringCspProblems(html) {
+  const tags = [...html.matchAll(/<meta[^>]*http-equiv="Content-Security-Policy"[^>]*>/gi)];
+  const policies = tags.map((tag) => /content="([^"]*)"/.exec(tag[0])?.[1]);
+  return policies.length === 1 && policies[0] === KEYRING_CSP
+    ? []
+    : [`keyring page must carry exactly one CSP meta tag with ${JSON.stringify(KEYRING_CSP)}`];
+}
+
+/**
  * Problems with the keyring page's modules.
  * @param {string[]} modules
  */
@@ -594,7 +612,10 @@ function main() {
 
   const scripts = scriptsOf(join(out, "keyring.html"));
   const keyring = scripts.map((script) => closureOf(script, chunks));
-  const problems = keyringProblems(keyring.flatMap(({ modules }) => modules));
+  const problems = [
+    ...keyringCspProblems(readFileSync(join(out, "keyring.html"), "utf8")),
+    ...keyringProblems(keyring.flatMap(({ modules }) => modules)),
+  ];
 
   for (const entry of Object.keys(BUNDLE_PACKAGES)) {
     const files = entry.endsWith(".html") ? scriptsOf(join(out, entry)) : [entry];

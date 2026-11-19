@@ -4,6 +4,8 @@ import {
   BUNDLE_PACKAGES,
   closureOf,
   entryPackageProblems,
+  KEYRING_CSP,
+  keyringCspProblems,
   keyringProblems,
   LAZY_PACKAGES,
   lazyChunkProblems,
@@ -163,5 +165,19 @@ describe("worker scripts and coverage", () => {
     expect(unusedWorkerPatterns(["chunks/a.js"])).toEqual([
       "no built script matches worker pattern assets/phrase-key.worker-*.js; remove it from WORKER_SCRIPTS",
     ]);
+  });
+});
+
+describe("keyring CSP", () => {
+  const meta = (content: string) => `<meta http-equiv="Content-Security-Policy" content="${content}" />`;
+
+  it("accepts the page with exactly the keyring policy", () => {
+    expect(keyringCspProblems(`<head>${meta(KEYRING_CSP)}</head>`)).toEqual([]);
+  });
+
+  it("flags a missing, changed or second policy", () => {
+    expect(keyringCspProblems("<head></head>")).toHaveLength(1);
+    expect(keyringCspProblems(meta("default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src https:"))).toHaveLength(1);
+    expect(keyringCspProblems(meta(KEYRING_CSP) + meta("connect-src https:"))).toHaveLength(1);
   });
 });
