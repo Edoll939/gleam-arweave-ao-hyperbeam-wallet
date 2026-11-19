@@ -59,6 +59,8 @@ export interface CollectibleThumbnailProps {
   className?: string;
   /** Empty alt text where the name is already shown beside the image, as escaped untrusted text. */
   decorative?: boolean;
+  /** A Permaweb Name's label: the tile shows `@label` as type instead of media. */
+  nameLabel?: string;
 }
 
 export function CollectibleThumbnail({
@@ -70,6 +72,7 @@ export function CollectibleThumbnail({
   kindLabel,
   className,
   decorative = false,
+  nameLabel,
 }: CollectibleThumbnailProps) {
   const mediaUrl = imageUrl ?? videoUrl;
   const [stored, setStored] = useState<LoadState>(() => fresh(mediaUrl));
@@ -106,6 +109,27 @@ export function CollectibleThumbnail({
     fade && !load.loaded && "opacity-0",
   );
   const loop = play && !prefersReducedMotion();
+
+  if (nameLabel !== undefined) {
+    return (
+      <div
+        data-testid="collectible-tile"
+        role={decorative ? undefined : "img"}
+        aria-label={decorative ? undefined : name}
+        aria-hidden={decorative || undefined}
+        className={cn("@container relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-mist p-[8%] text-foreground", className)}
+      >
+        {/* Below 72px only the @ fits legibly; above it the label scales down as it grows. */}
+        <span className="text-[45cqw] font-semibold leading-none @min-[72px]:hidden">@</span>
+        <span
+          className="hidden break-all text-center font-semibold leading-tight @min-[72px]:line-clamp-3"
+          style={{ fontSize: `${nameTileFontCqw(nameLabel)}cqw` }}
+        >
+          @{nameLabel}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -155,6 +179,10 @@ export function CollectibleThumbnail({
       )}
     </div>
   );
+}
+
+function nameTileFontCqw(label: string): number {
+  return Math.max(8, Math.min(22, 150 / (label.length + 1)));
 }
 
 const KIND_ICONS: Partial<Record<CollectibleKind, LucideIcon>> = { document: FileText, audio: Music, web: Globe };

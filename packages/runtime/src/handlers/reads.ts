@@ -291,7 +291,18 @@ function isCachedCollectible(item: unknown): item is Collectible {
   return (
     typeof fields.id === "string" &&
     typeof fields.name === "string" &&
-    OPTIONAL_COLLECTIBLE_STRINGS.every((key) => fields[key] === undefined || typeof fields[key] === "string")
+    OPTIONAL_COLLECTIBLE_STRINGS.every((key) => fields[key] === undefined || typeof fields[key] === "string") &&
+    (fields.permawebName === undefined || isCachedPermawebName(fields.permawebName))
+  );
+}
+
+function isCachedPermawebName(value: unknown): boolean {
+  if (value === null || typeof value !== "object") return false;
+  const fields = value as Record<string, unknown>;
+  return (
+    typeof fields.label === "string" &&
+    (fields.target === undefined || typeof fields.target === "string") &&
+    (fields.listed === undefined || fields.listed === true)
   );
 }
 

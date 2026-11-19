@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { collectibleKind, type Collectible } from "@gleam/core";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { collectibleKind, type Collectible, type CollectibleKind } from "@gleam/core";
 import { CollectibleThumbnail, EmptyState } from "@gleam/ui/src/components/wallet/index.ts";
 import { cn } from "@gleam/ui/src/primitives/cn.ts";
 import { useT } from "../../../i18n";
@@ -30,6 +30,27 @@ export function collectibleKindLabel(t: Translate, contentType: string | undefin
   }
 }
 
+type GalleryGroup = CollectibleKind | "name";
+
+const GROUP_ORDER: readonly GalleryGroup[] = ["image", "video", "audio", "web", "document", "file", "name"];
+
+function groupOf(item: Collectible): GalleryGroup {
+  return item.permawebName ? "name" : collectibleKind(item.contentType);
+}
+
+const byName = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
+/** Grouped by kind in `GROUP_ORDER`, A–Z inside each group; a name sorts by its label, without the @. */
+export function sortForGallery(items: readonly Collectible[]): Collectible[] {
+  const sortName = (item: Collectible) => item.permawebName?.label ?? item.name;
+  return [...items].sort(
+    (a, b) =>
+      GROUP_ORDER.indexOf(groupOf(a)) - GROUP_ORDER.indexOf(groupOf(b)) ||
+      byName.compare(sortName(a), sortName(b)) ||
+      a.id.localeCompare(b.id),
+  );
+}
+
 /**
  * The detail screen unmounts this view, so the piece being shown is kept
  * here to bring the member back to it.
@@ -45,9 +66,10 @@ const CHEVRON_CLASS =
   "absolute inset-y-0 z-10 hidden w-9 items-center text-foreground disabled:invisible [@media(hover:hover)_and_(pointer:fine)]:flex";
 
 /**
- * A strip of thumbnails over one large piece with its name. Tapping the
- * large piece opens its detail screen. The arrows show only where a
- * pointer can hover; on touch the large piece swipes.
+ * A strip of thumbnails over one large piece with its name, in
+ * `sortForGallery` order. Tapping the large piece opens its detail
+ * screen. The arrows show only where a pointer can hover; on touch the
+ * large piece swipes.
  */
 export function CollectiblesGallery({ items, loading, onOpen }: CollectiblesGalleryProps) {
   const t = useT();
@@ -56,7 +78,7 @@ export function CollectiblesGallery({ items, loading, onOpen }: CollectiblesGall
   const swipeFrom = useRef<number | null>(null);
   const swiped = useRef(false);
 
-  const list = items ?? [];
+  const list = useMemo(() => sortForGallery(items ?? []), [items]);
   const found = list.findIndex((item) => item.id === shownId);
   const index = found === -1 ? 0 : found;
   const shown = list[index];
@@ -129,6 +151,8 @@ export function CollectiblesGallery({ items, loading, onOpen }: CollectiblesGall
               className={cn(
                 "w-14 shrink-0 rounded-lg transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground",
                 position === index ? "opacity-100" : "opacity-45 hover:opacity-80",
+                // A wider gap where one kind ends and the next begins; the groups have no labels.
+                position > 0 && groupOf(list[position - 1]!) !== groupOf(item) && "ml-3",
               )}
             >
               <CollectibleThumbnail
@@ -136,6 +160,7 @@ export function CollectiblesGallery({ items, loading, onOpen }: CollectiblesGall
                 imageUrl={item.imageUrl}
                 videoUrl={item.videoUrl}
                 kind={collectibleKind(item.contentType)}
+                nameLabel={item.permawebName?.label}
                 decorative
               />
             </button>
@@ -180,6 +205,7 @@ export function CollectiblesGallery({ items, loading, onOpen }: CollectiblesGall
           play
           kind={collectibleKind(shown.contentType)}
           kindLabel={collectibleKindLabel(t, shown.contentType)}
+          nameLabel={shown.permawebName?.label}
           decorative
           className="rounded-2xl"
         />

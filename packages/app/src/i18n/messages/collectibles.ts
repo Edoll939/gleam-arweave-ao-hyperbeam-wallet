@@ -15,6 +15,9 @@ export const collectibles = defineMessages({
     kindFile: "File",
     showMore: "more",
     showLess: "Show less",
+    name: "Name",
+    pointsTo: "Points to",
+    listedForSale: "Listed for sale",
   },
   es: {
     title: "Coleccionables",
@@ -30,6 +33,9 @@ export const collectibles = defineMessages({
     kindFile: "Archivo",
     showMore: "más",
     showLess: "Mostrar menos",
+    name: "Nombre",
+    pointsTo: "Apunta a",
+    listedForSale: "En venta",
   },
   id: {
     title: "Koleksi",
@@ -45,6 +51,9 @@ export const collectibles = defineMessages({
     kindFile: "Berkas",
     showMore: "selengkapnya",
     showLess: "Tampilkan lebih sedikit",
+    name: "Nama",
+    pointsTo: "Mengarah ke",
+    listedForSale: "Dijual",
   },
   "pt-BR": {
     title: "Colecionáveis",
@@ -60,6 +69,9 @@ export const collectibles = defineMessages({
     kindFile: "Arquivo",
     showMore: "mais",
     showLess: "Mostrar menos",
+    name: "Nome",
+    pointsTo: "Aponta para",
+    listedForSale: "À venda",
   },
   vi: {
     title: "Sưu tập",
@@ -75,6 +87,9 @@ export const collectibles = defineMessages({
     kindFile: "Tệp",
     showMore: "thêm",
     showLess: "Ẩn bớt",
+    name: "Tên",
+    pointsTo: "Trỏ đến",
+    listedForSale: "Đang rao bán",
   },
   tr: {
     title: "Koleksiyonlar",
@@ -90,6 +105,9 @@ export const collectibles = defineMessages({
     kindFile: "Dosya",
     showMore: "daha fazla",
     showLess: "Daha az göster",
+    name: "Ad",
+    pointsTo: "Yönlendirdiği yer",
+    listedForSale: "Satışta",
   },
   ru: {
     title: "Коллекция",
@@ -105,6 +123,9 @@ export const collectibles = defineMessages({
     kindFile: "Файл",
     showMore: "ещё",
     showLess: "Свернуть",
+    name: "Имя",
+    pointsTo: "Указывает на",
+    listedForSale: "Выставлено на продажу",
   },
   ja: {
     title: "コレクティブル",
@@ -120,6 +141,9 @@ export const collectibles = defineMessages({
     kindFile: "ファイル",
     showMore: "もっと見る",
     showLess: "一部を表示",
+    name: "ネーム",
+    pointsTo: "リンク先",
+    listedForSale: "出品中",
   },
   ko: {
     title: "컬렉터블",
@@ -135,6 +159,9 @@ export const collectibles = defineMessages({
     kindFile: "파일",
     showMore: "더보기",
     showLess: "간략히",
+    name: "네임",
+    pointsTo: "연결 대상",
+    listedForSale: "판매 중",
   },
   "zh-CN": {
     title: "收藏品",
@@ -150,6 +177,9 @@ export const collectibles = defineMessages({
     kindFile: "文件",
     showMore: "更多",
     showLess: "收起",
+    name: "名称",
+    pointsTo: "指向",
+    listedForSale: "出售中",
   },
   "zh-TW": {
     title: "收藏品",
@@ -165,5 +195,8 @@ export const collectibles = defineMessages({
     kindFile: "檔案",
     showMore: "更多",
     showLess: "收合",
+    name: "名稱",
+    pointsTo: "指向",
+    listedForSale: "出售中",
   },
 });

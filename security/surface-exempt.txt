@@ -50,6 +50,7 @@ packages/core/src/ao/balance.ts Balance, token and result reads: a bug shows a w
 packages/core/src/ao/collectibles.ts Balance, token and result reads: a bug shows a wrong number, it doesn't sign.
 packages/core/src/ao/index.ts Balance, token and result reads: a bug shows a wrong number, it doesn't sign.
 packages/core/src/ao/legacy-token.ts Balance, token and result reads: a bug shows a wrong number, it doesn't sign.
+packages/core/src/ao/names.ts Balance, token and result reads: a bug shows a wrong number, it doesn't sign.
 packages/core/src/ao/result.ts Balance, token and result reads: a bug shows a wrong number, it doesn't sign.
 packages/core/src/ao/token-discovery.ts Balance, token and result reads: a bug shows a wrong number, it doesn't sign.
 packages/core/src/ao/token-state.ts Balance, token and result reads: a bug shows a wrong number, it doesn't sign.
@@ -168,6 +169,7 @@ packages/app/src/screens/main-screen/src/MainScreenNotice.tsx A screen outside t
 packages/app/src/screens/main-screen/src/useNotice.ts A screen outside the key, signing and approval paths.
 packages/app/src/screens/main-screen/src/notice.ts A screen outside the key, signing and approval paths.
 packages/app/src/screens/main-screen/src/usePortfolioHistory.ts A screen outside the key, signing and approval paths.
+packages/app/src/screens/main-screen/src/useNetworkSettings.ts A screen outside the key, signing and approval paths.
 packages/app/src/screens/activity/src/useCollectibles.ts A screen outside the key, signing and approval paths.
 packages/app/src/screens/activity/src/useSendCollectible.ts Background send call plus local cache cleanup; the transfer is built and checked by the listed background handlers.
 packages/app/src/screens/points/index.tsx A screen outside the key, signing and approval paths.

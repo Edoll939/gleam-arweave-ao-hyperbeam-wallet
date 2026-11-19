@@ -82,7 +82,13 @@ export function ActivityRow({
           <div className="text-caption text-muted">{subtitle}</div>
         </div>
         {collectible ? (
-          <CollectibleThumbnail name={collectible.name} imageUrl={collectible.imageUrl} className="w-[30px] flex-shrink-0 rounded-md" />
+          <CollectibleThumbnail
+            name={collectible.name}
+            imageUrl={collectible.imageUrl}
+            // Only a Permaweb Name is named `@<label>` (core `permawebNameLabel`; ui can't import core).
+            nameLabel={collectible.name.startsWith("@") && collectible.name.length > 1 ? collectible.name.slice(1) : undefined}
+            className="w-[30px] flex-shrink-0 rounded-md"
+          />
         ) : outcomeUnknown ? (
           <span aria-hidden="true" className="mr-1 h-3 w-3 flex-shrink-0 rounded-full border-[1.5px] border-muted" />
         ) : amountLabel === undefined ? null : (

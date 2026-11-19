@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { Toast } from "@gleam/ui/src/primitives/toast.tsx";
 import { BackStackContext, createBackStack } from "@gleam/ui/src/primitives/back-stack.tsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import {
 } from "./address-identity";
 import { CollectibleDetailView } from "./screens/collectibles/index.tsx";
 import { MainScreenView, type MainScreenTab } from "./screens/main-screen/index.tsx";
+import { useNetworkSettings } from "./screens/main-screen/src/useNetworkSettings";
 import { SendCollectibleView, SendView } from "./screens/send/index.tsx";
 import { ReceiveView } from "./screens/receive/index.tsx";
 import { WalletSwitcherView } from "./screens/wallet-switcher/index.tsx";
@@ -125,6 +126,12 @@ function resolveActiveWallet(state: WalletState): WalletSummary | null {
   const unlockedId = state.session?.unlockedWalletIds[0] ?? null;
   const preferredId = state.activeWalletId ?? unlockedId;
   return state.wallets.find((wallet) => wallet.id === preferredId) ?? state.wallets[0] ?? null;
+}
+
+/** Looks the gateway up only for a name, whose detail links to the name's own site. */
+function CollectibleDetailScreen({ runtime, ...props }: Omit<ComponentProps<typeof CollectibleDetailView>, "gatewayUrl"> & { runtime: RuntimePort }) {
+  const networkSettings = useNetworkSettings(runtime, props.collectible.permawebName !== undefined);
+  return <CollectibleDetailView {...props} gatewayUrl={networkSettings.data?.gatewayUrl} />;
 }
 
 export function App(props: AppProps) {
@@ -333,7 +340,8 @@ function AppContent({ layout, runtime: runtimeProp }: AppProps) {
     );
   } else if (subView.kind === "collectible") {
     content = (
-      <CollectibleDetailView
+      <CollectibleDetailScreen
+        runtime={runtime}
         collectible={subView.collectible}
         onBack={() => setSubView({ kind: "home" })}
         onSend={(collectible) => setSubView({ kind: "send-collectible", collectible })}

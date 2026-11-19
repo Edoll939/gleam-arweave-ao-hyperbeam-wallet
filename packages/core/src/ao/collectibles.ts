@@ -2,7 +2,8 @@ import { collectibleKind, type Collectible } from "../models/collectible";
 import { classifyAsset, createAssetScanner, mapLimit, PROCESS_ID, tagMap, withRequestTimeout, type Tag } from "./asset-scan";
 import { readL1Balance } from "./balance";
 import { userErrorMessage } from "../models/user-errors";
-import { trimTrailingSlashes } from "../models/network";
+import { L1_TOKEN_NODE_URLS, trimTrailingSlashes } from "../models/network";
+import { isNamespaceEntry, nameCarrierLabel, readCarrierHolding, readCarrierState, type CarrierHolding } from "./names";
 
 export { classifyAsset } from "./asset-scan";
 export type { AssetClass } from "./asset-scan";
@@ -29,12 +30,18 @@ function clean(value: string | undefined, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
+/** Only a Permaweb Name's display name starts with `@` (`permawebNameLabel`). */
+function displayName(t: Record<string, string>): string {
+  const name = (clean(t.name, 128) || clean(t.ticker, 32)).replace(/^@+/, "");
+  return name || "Unnamed asset";
+}
+
 function shortenId(id: string): string {
   return id.length <= 10 ? id : `${id.slice(0, 5)}…${id.slice(-4)}`;
 }
 
 /**
- * Finds the AO NFTs `address` holds: candidate processes from the
+ * Finds the AO NFTs and Permaweb Names `address` holds: candidate processes from the
  * gateway (assets it was the initial holder of, assets it has made market
  * actions on, assets transferred to it) -> classify by spawn tags -> keep
  * those with a positive balance. "Held" can't be read from the tags,
@@ -81,16 +88,38 @@ export async function discoverCollectibles(options: DiscoverCollectiblesOptions)
     const tags = descriptors.get(id);
     return tags !== undefined && classifyAsset(tags) === "unique";
   });
-
-  const checks = await mapLimit(uniques, concurrency, async (id) => {
-    if (Date.now() >= deadline) return null;
-    try {
-      return await readL1Balance(id, address, gatewayUrl, peerUrl, fetchImpl, undefined, options.l1NodeUrls);
-    } catch {
-      return undefined;
-    }
+  const names = candidates.flatMap((id) => {
+    const tags = descriptors.get(id);
+    const label = tags === undefined ? null : nameCarrierLabel(tags);
+    return label === null ? [] : [{ id, label }];
   });
-  if (uniques.length > 0 && checks.every((quantity) => quantity === undefined)) {
+
+  const nodeUrls = options.l1NodeUrls ?? L1_TOKEN_NODE_URLS;
+  const stateHosts = [...new Set([gatewayUrl, ...nodeUrls, peerUrl])];
+  const namespaceHosts = [...new Set([gatewayUrl, ...nodeUrls])];
+  // Concurrent, so a wallet with many NFTs doesn't spend the whole budget before its names.
+  const [checks, nameChecks] = await Promise.all([
+    mapLimit(uniques, concurrency, async (id) => {
+      if (Date.now() >= deadline) return null;
+      try {
+        return await readL1Balance(id, address, gatewayUrl, peerUrl, fetchImpl, undefined, options.l1NodeUrls);
+      } catch {
+        return undefined;
+      }
+    }),
+    mapLimit(names, concurrency, async ({ id, label }) => {
+      if (Date.now() >= deadline) return null;
+      let holding: CarrierHolding | null;
+      try {
+        holding = readCarrierHolding(await readCarrierState(id, stateHosts, fetchImpl), address);
+      } catch {
+        return undefined;
+      }
+      if (holding === null || !(await isNamespaceEntry(label, id, namespaceHosts, fetchImpl))) return null;
+      return { id, label, holding };
+    }),
+  ]);
+  if (uniques.length + names.length > 0 && [...checks, ...nameChecks].every((check) => check === undefined)) {
     throw new Error(userErrorMessage("collectibleBalanceFailed", { peer: peerUrl }));
   }
   const held = uniques.filter((_, index) => {
@@ -116,7 +145,20 @@ export async function discoverCollectibles(options: DiscoverCollectiblesOptions)
   // process with a 200 and an empty body. The URL only ever loads through
   // <img> or <video>, so losing the sandbox subdomain is harmless.
   const media = `${trimTrailingSlashes(gatewayUrl)}/raw`;
-  return held.map((id): Collectible => {
+  const heldNames = nameChecks.flatMap((check) => (check ? [check] : []));
+  const nameItems = heldNames.map(
+    ({ id, label, holding }): Collectible => ({
+      id,
+      name: `@${label}`,
+      ticker: "NAME",
+      permawebName: {
+        label,
+        ...(holding.target !== undefined ? { target: holding.target } : {}),
+        ...(holding.status === "listed" ? { listed: true as const } : {}),
+      },
+    }),
+  );
+  const assetItems = held.map((id): Collectible => {
     const t = tagMap(descriptors.get(id) ?? []);
     const ticker = clean(t.ticker, 32) || "ASSET";
     const contentType = clean(t["content-type"], 128);
@@ -129,7 +171,7 @@ export async function discoverCollectibles(options: DiscoverCollectiblesOptions)
       : undefined;
     return {
       id,
-      name: clean(t.name, 128) || clean(t.ticker, 32) || "Unnamed asset",
+      name: displayName(t),
       ticker,
       ...(contentType ? { contentType } : {}),
       ...(kind === "image" ? { imageUrl: `${media}/${id}` } : {}),
@@ -138,4 +180,5 @@ export async function discoverCollectibles(options: DiscoverCollectiblesOptions)
       ...(collectionId ? { collectionId, collectionName } : {}),
     };
   });
+  return [...assetItems, ...nameItems];
 }
