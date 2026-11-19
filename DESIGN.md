@@ -175,7 +175,7 @@ Paper is a light theme on a grey paper with a little warmth. It shares dark's la
 - **Receipts.** An activity's detail is a slip with a tear line, its status a rubber stamp.
 - **Material.** The token sheet lifts off the paper with a soft edge, settles in once, and carries the Gleam mark as an embossed watermark.
 - **No texture.** The paper is flat colour; grain and ruled lines compete with the rows.
-- **Printed colour.** The beam, warning, gains and losses are each a little deeper than light's so they hold on the paper.
+- **Printed colour.** The beam is ink soaked into the paper: each stop is mixed about a fifth of the way toward it. Warning, gains and losses are a step deeper than light's so they hold on the paper.
 
 The paper-only touches use the `paper:` variant and the `.gleam-*` paper classes in `theme.css`.
 
