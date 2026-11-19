@@ -32,7 +32,7 @@ import { forgetQueryCache } from "../query-cache/sweep";
 import { ConnectionRequestScreen } from "./ConnectionRequestScreen";
 import { ScanAttestationResult, ScanAttestationScreen } from "./ScanAttestationScreen";
 import { SigningApprovalScreen } from "./SigningApprovalScreen";
-import { applyDocumentTheme } from "../theme";
+import { applyDocumentTheme, themeAttribute } from "../theme";
 import { LoadSignedDataProvider } from "./SignedDataText";
 import { errorText } from "../i18n/errors";
 import { recipientsOf, transferRequestFromPreview } from "../transfer-review/model";
@@ -499,7 +499,7 @@ function ApprovalRootContent({
 
   return (
     <AddressIdentityProvider value={addressIdentity}>
-      <div data-theme={theme === "dark" ? "dark" : undefined} className="min-h-full bg-background text-foreground">
+      <div data-theme={themeAttribute(theme)} className="min-h-full bg-background text-foreground">
         {showSecurityPhrase ? (
           <div className="flex justify-center px-6 pt-3">
             <SecurityPhraseMark phrase={securityPhrase.phrase} iconSvg={securityPhrase.icon} />

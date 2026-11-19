@@ -154,7 +154,30 @@ Dark mode has its own rules. It is not the light theme inverted.
 - **Commit actions are bright.** Send and Receive are equal level-2 tiles on the main screen. The bright primary fill is kept for the button that commits.
 - **Two kinds of tab.** Section tabs (Tokens, Collectibles, Activity) are underlined labels. The chart's range picker uses chips.
 
-Layout rules that tokens can't carry use Tailwind's `dark:` variant, which matches `data-theme="dark"`.
+Layout rules that tokens can't carry use Tailwind's `layered:` variant, which matches dark and paper, or `dark:` for a rule only dark needs.
+
+**Paper**
+
+Paper is a light theme on a grey paper with a little warmth. It shares dark's layered layout: the token sheet, underlined section tabs, tile actions and the neutral chart.
+
+| Token | Paper | Level |
+|---|---|---|
+| **Background** | `#f2f1ed` | 0: the paper |
+| **Surface** | `#fafaf8` | 1: a lighter sheet laid on it |
+| **Mist** | `#e6e4de` | 2: tiles and chips, pressed in a step darker |
+| **Foreground**, **Primary fill** | `#1b1a18` | Warm ink |
+| **Muted** | `#6a6862` | |
+| **Faint** | `#99968e` | |
+| **Pencil** | `#8d8a83` | Pending activity |
+
+- **Weight contrast.** The headline figure is extra bold, set tight and pressed into the paper (`.gleam-figure`). Secondary amounts and prices are light.
+- **Pencil, then ink.** A pending activity row is written in pencil and inks in when it settles.
+- **Receipts.** An activity's detail is a slip with a tear line, its status a rubber stamp.
+- **Material.** The token sheet lifts off the paper with a soft edge, settles in once, and carries the Gleam mark as an embossed watermark.
+- **No texture.** The paper is flat colour; grain and ruled lines compete with the rows.
+- **Printed colour.** The beam, warning, gains and losses are each a little deeper than light's so they hold on the paper.
+
+The paper-only touches use the `paper:` variant and the `.gleam-*` paper classes in `theme.css`.
 
 ### Semantic Colors
 

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import type { RuntimePort, ThemeSettings } from "@gleam/core";
+import { isThemeSettings, type RuntimePort, type ThemeSettings } from "@gleam/core";
 import { UnlockView } from "@gleam/app/src/screens/unlock/index.tsx";
 import { PasskeySetup, type PasskeySetupProps } from "./PasskeySetup";
 import { useT } from "@gleam/app/src/i18n/index.tsx";
 import { LocalizedRoot } from "@gleam/app/src/i18n/LocalizedRoot.tsx";
+import { applyDocumentTheme } from "@gleam/app/src/theme.tsx";
 
 export interface PasskeyRootProps {
   mode: "setup" | "unlock";
@@ -34,7 +35,7 @@ function PasskeyContent({ mode, runtime, onFinish, createPasskey }: PasskeyRootP
     void (async () => {
       try {
         const settings = await runtime.send<void, ThemeSettings>({ type: "getThemePreference", payload: undefined });
-        setTheme(settings?.theme === "dark" ? "dark" : "light");
+        setTheme(isThemeSettings(settings) ? settings.theme : "light");
       } catch {
         setTheme("light");
       }
@@ -42,8 +43,7 @@ function PasskeyContent({ mode, runtime, onFinish, createPasskey }: PasskeyRootP
   }, [runtime]);
 
   useEffect(() => {
-    if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
-    else document.documentElement.removeAttribute("data-theme");
+    applyDocumentTheme(theme);
   }, [theme]);
 
   return (
