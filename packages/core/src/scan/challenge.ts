@@ -14,9 +14,9 @@ export interface ChallengeFunction {
  * Each draw is SHA-256(seed ‖ counter) read as a 48-bit integer, with
  * rejection sampling so every candidate is equally likely.
  *
- * When `prefer` names functions in the pool (those no scan has examined
- * yet), the first function comes from them, so coverage grows with each
- * scan. Only the first: drawing all three from a shrinking set would hand
+ * When `prefer` names functions in the pool (those the fewest scans have
+ * examined), the first function comes from them, so coverage grows with
+ * each scan. Only the first: drawing all three from a shrinking set would hand
  * consecutive scans the same functions, and one scan's answers to another
  * wallet.
  */

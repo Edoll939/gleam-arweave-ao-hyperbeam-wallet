@@ -22,9 +22,11 @@ export { decodeAttestationPayload, encodeAttestationPayload } from "./payload";
 export { fetchScanStats } from "./count";
 export type { ScanStats } from "./count";
 export {
+  MIN_PAID_SCANS_PER_MINOR_RELEASE,
   MIN_PAID_SCANS_PER_RELEASE,
   PAID_SCANS_PER_RELEASE,
   ROUND_STEP_PERCENT,
+  isPatchRelease,
   paidPlacesFor,
   roundReward,
   scanRewardOf,

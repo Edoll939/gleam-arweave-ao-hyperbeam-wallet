@@ -18,7 +18,7 @@ async function storedTotal(db: Queryable, release: string): Promise<number | nul
 /**
  * Fixes the release's paid places the first time it is asked: one per
  * challenge's worth of functions no scan has examined in their current
- * text, within the floor and cap. Kept, so the total doesn't fall while
+ * text, within the release's floor and the cap. Kept, so the total doesn't fall while
  * scans examine the functions it was counted from.
  */
 export async function openRelease(db: Queryable, release: string, functions: readonly ReleaseFunction[]): Promise<number> {
@@ -27,7 +27,7 @@ export async function openRelease(db: Queryable, release: string, functions: rea
   const examined = await examinedFunctions(db, release, functions);
   await db.query("INSERT INTO scan_releases (release, paid_places, created_at) VALUES ($1, $2, now()) ON CONFLICT (release) DO NOTHING", [
     release,
-    paidPlacesFor(functions.length - examined.size),
+    paidPlacesFor(functions.length - examined.size, release),
   ]);
   return (await storedTotal(db, release))!;
 }

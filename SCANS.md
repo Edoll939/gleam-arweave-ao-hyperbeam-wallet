@@ -90,8 +90,10 @@ atomic integer).
 
 `GET /scan/challenge` without `area` picks the area with the smallest
 share of its functions examined, the lower tier on a tie. It draws the
-3 functions from that area only, and from the unexamined ones while
-there are any.
+3 functions from that area only. The first comes from the functions the
+fewest scans have examined: the unexamined while there are any, then the
+least looked at, so repeat scans of unchanged code go round the whole
+area.
 
 **Coverage carries across releases.** The server keeps a SHA-256 of
 each answered function's text at the attestation's commit. A function
@@ -242,7 +244,7 @@ voids it with `scan-void`, which removes its points and frees its paid
 place.
 
 **Limited payoff.** A scan earns a small, fixed amount, and a release
-pays at most 100 scans, fewer when little of its code is unexamined.
+pays at most 100 scans.
 Each further round adds only 10% of that amount. Finding real
 problems pays far more, and that can't be faked.
 
@@ -253,11 +255,12 @@ rise as the community grows.
 
 **Paid places.** A release opens one paid place for every 3 of its
 functions that aren't examined (Coverage carries across releases),
-rounded up, at least 1 and at most 100 (`paidPlacesFor`). The number
-is fixed the first time the release is asked for, normally by its first
-challenge, so it doesn't fall as scans examine functions. A patch
-release with nothing unexamined opens 1;
-releases scanned before this rule opened 100.
+rounded up, at most 100 (`paidPlacesFor`). An `x.y.0` release opens at
+least 50, so a new version always has paid work; a patch release opens
+at least 1. The number is fixed the first time the release is asked
+for, normally by its first challenge, so it doesn't fall as scans
+examine functions. Releases opened before the floor of 50 keep their
+number.
 
 **Scans.** Each paid scan earns **0.1% of the previous day's total
 holding points**, credited as soon as it's accepted. Every paid place

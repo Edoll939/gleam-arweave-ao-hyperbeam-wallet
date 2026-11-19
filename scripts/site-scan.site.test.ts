@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import {
+  MIN_PAID_SCANS_PER_MINOR_RELEASE as CORE_MIN_PAID_SCANS_PER_MINOR_RELEASE,
   MIN_PAID_SCANS_PER_RELEASE as CORE_MIN_PAID_SCANS_PER_RELEASE,
   PAID_SCANS_PER_RELEASE as CORE_PAID_SCANS_PER_RELEASE,
   ROUND_STEP_PERCENT as CORE_ROUND_STEP_PERCENT,
@@ -11,6 +12,7 @@ import {
   AGENT_LINE,
   DEV_EXTENSION_KEY,
   EXTENSION_ID,
+  MIN_PAID_SCANS_PER_MINOR_RELEASE,
   MIN_PAID_SCANS_PER_RELEASE,
   PAID_SCANS_PER_RELEASE,
   ROUND_STEP_PERCENT,
@@ -358,7 +360,11 @@ describe("site scan lib: the points API", () => {
     expect(nextScanReward(rewards, 100)).toBe("1000");
     expect(nextScanReward(rewards, 1)).toBe("1000");
     expect(nextScanReward(rewards, 0)).toBe("0");
-    expect([MIN_PAID_SCANS_PER_RELEASE, PAID_SCANS_PER_RELEASE]).toEqual([CORE_MIN_PAID_SCANS_PER_RELEASE, CORE_PAID_SCANS_PER_RELEASE]);
+    expect([MIN_PAID_SCANS_PER_RELEASE, MIN_PAID_SCANS_PER_MINOR_RELEASE, PAID_SCANS_PER_RELEASE]).toEqual([
+      CORE_MIN_PAID_SCANS_PER_RELEASE,
+      CORE_MIN_PAID_SCANS_PER_MINOR_RELEASE,
+      CORE_PAID_SCANS_PER_RELEASE,
+    ]);
   });
 
   it("names the paid places a release opened when the server says", () => {

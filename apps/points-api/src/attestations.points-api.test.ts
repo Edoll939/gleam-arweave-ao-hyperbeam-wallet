@@ -232,7 +232,7 @@ describe("POST /attestations", () => {
 
     expect(status).toBe(200);
     // Six functions, none examined: two places.
-    expect(json).toMatchObject({ ok: true, points: "10000", paid: true, unpaidReason: null, paidPlacesLeft: 1, paidScans: 1 });
+    expect(json).toMatchObject({ ok: true, points: "10000", paid: true, unpaidReason: null, paidPlacesLeft: 49, paidScans: 1 });
     expect(json.attestationId).toMatch(/^[0-9a-f]{64}$/);
     const { rows } = await s.db.query<{ address: string; kind: string; amount_atomic: string; attestation_id: string }>(
       "SELECT address, kind, amount_atomic::text, attestation_id FROM scan_points",
@@ -281,7 +281,7 @@ describe("POST /attestations", () => {
     const { status, json } = await s.post("/attestations", await attestBody(alice, attestationFor(s, await s.challenge())));
 
     expect(status).toBe(200);
-    expect(json).toMatchObject({ points: "0", paid: false, unpaidReason: "no_snapshot", paidPlacesLeft: 2, paidScans: 0 });
+    expect(json).toMatchObject({ points: "0", paid: false, unpaidReason: "no_snapshot", paidPlacesLeft: 50, paidScans: 0 });
     expect(await count(s.db, "attestations")).toBe(1);
     expect(await count(s.db, "scan_points")).toBe(0);
     expect((await s.get("/attestations")).json.attestations[0]).toMatchObject({ paid: false, unpaidReason: "no_snapshot" });
@@ -677,7 +677,7 @@ describe("POST /attestations/check", () => {
     const again = await s.post("/attestations/check", { attestation });
 
     expect(first.status).toBe(200);
-    expect(first.json).toMatchObject({ ok: true, paidPlacesLeft: 2, paidScans: 0 });
+    expect(first.json).toMatchObject({ ok: true, paidPlacesLeft: 50, paidScans: 0 });
     expect(first.json.message).toBe(`gleam-points:attest:v1:1.0.0:${first.json.attestationId}`);
     expect(again.json).toEqual(first.json);
     expect(await count(s.db, "challenges WHERE used_by_attestation IS NOT NULL")).toBe(0);
@@ -784,7 +784,7 @@ describe("GET /attestations/count", () => {
     const latest = await s.get("/attestations/count?release=1.0.0");
     const none = await s.get("/attestations/count?release=0.5.0");
 
-    expect(latest.json).toEqual({ release: "1.0.0", total: 1, paidPlacesLeft: 1, paidScans: 1 });
+    expect(latest.json).toEqual({ release: "1.0.0", total: 1, paidPlacesLeft: 49, paidScans: 1 });
     expect(none.status).toBe(200);
     // Only the latest release can be scanned, so an older one never opened places.
     expect(none.json).toEqual({ release: "0.5.0", total: 0, paidPlacesLeft: 0, paidScans: 0 });
@@ -822,7 +822,7 @@ describe("GET /attestations", () => {
     expect(status).toBe(200);
     expect(headers.get("cache-control")).toBe("public, max-age=60");
     expect(headers.get("access-control-allow-origin")).toBe("*");
-    expect(json).toMatchObject({ release: "1.0.0", commit: COMMIT, total: 2, paidPlacesLeft: 0, paidScans: 2, models: ["model-a", "model-b"] });
+    expect(json).toMatchObject({ release: "1.0.0", commit: COMMIT, total: 2, paidPlacesLeft: 48, paidScans: 2, models: ["model-a", "model-b"] });
     expect(json.attestations.map((x: { id: string }) => x.id).sort()).toEqual([a, b].sort());
     const first = json.attestations.find((x: { id: string }) => x.id === a)!;
     expect(first).toMatchObject({
@@ -869,14 +869,14 @@ describe("GET /attestations", () => {
 
     expect(json.attestations).toHaveLength(1);
     expect(json.total).toBe(1);
-    expect(json.paidPlacesLeft).toBe(1);
+    expect(json.paidPlacesLeft).toBe(49);
     expect(json.coverage.examined).toBe(3);
   });
 
   it("starts empty with every function unexamined", async () => {
     const s = await setup();
     const { json } = await s.get("/attestations");
-    expect(json).toMatchObject({ attestations: [], total: 0, paidPlacesLeft: 2, paidScans: 0, coverage: { examined: 0, total: 6 } });
+    expect(json).toMatchObject({ attestations: [], total: 0, paidPlacesLeft: 50, paidScans: 0, coverage: { examined: 0, total: 6 } });
     expect(json.coverage.unexamined).toHaveLength(6);
   });
 
@@ -1276,6 +1276,26 @@ describe("scan areas and rounds", () => {
       for (let i = 0; i < 5; i++) expect((await s.challenge("keys")).functions[0]).toEqual({ file: "src/k.ts", symbol: "guardK2" });
     });
 
+    it("once all are examined, draws the first function from the least looked at", async () => {
+      const s = await areas();
+      await recordScan(s.db, 1, "keys", [
+        { file: "src/a.ts", symbol: "guardA1" },
+        { file: "src/a.ts", symbol: "guardA2" },
+        { file: "src/k.ts", symbol: "guardK1" },
+      ]);
+      await recordScan(s.db, 2, "keys", [
+        { file: "src/a.ts", symbol: "guardA1" },
+        { file: "src/a.ts", symbol: "guardA2" },
+        { file: "src/k.ts", symbol: "guardK2" },
+      ]);
+      // A voided scan's look doesn't count.
+      await recordScan(s.db, 3, "keys", [{ file: "src/k.ts", symbol: "guardK1" }], true);
+      for (let i = 0; i < 5; i++) {
+        const first = (await s.challenge("keys")).functions[0]!;
+        expect(first.file).toBe("src/k.ts");
+      }
+    });
+
     it("400 malformed_request for an unknown area", async () => {
       const s = await areas();
       const { status, json } = await s.get("/scan/challenge?area=everything");
@@ -1299,8 +1319,8 @@ describe("scan areas and rounds", () => {
       const first = await scan(s, alice, "keys");
       const second = await scan(s, alice, "signing");
 
-      expect(first.json).toMatchObject({ ok: true, area: "keys", round: 1, points: "10000", paidPlacesLeft: 3 });
-      expect(second.json).toMatchObject({ ok: true, area: "signing", round: 2, points: "11000", paidPlacesLeft: 2 });
+      expect(first.json).toMatchObject({ ok: true, area: "keys", round: 1, points: "10000", paidPlacesLeft: 49 });
+      expect(second.json).toMatchObject({ ok: true, area: "signing", round: 2, points: "11000", paidPlacesLeft: 48 });
       const { rows } = await s.db.query<{ area: string; round: number }>("SELECT area, round FROM attestations ORDER BY round");
       expect(rows).toEqual([{ area: "keys", round: 1 }, { area: "signing", round: 2 }]);
       // Another wallet's first scan is its own round 1.
@@ -1572,13 +1592,27 @@ describe("coverage across releases", () => {
 
   it("opens the latest release's paid places once, from what is unexamined, and keeps the total", async () => {
     const s = await twoReleases();
-    const first = await s.get("/attestations/count?release=1.1.0");
+    s.github.releases["1.1.1"] = s.github.releases["1.1.0"]!;
+    s.github.latest = "v1.1.1";
+    const first = await s.get("/attestations/count?release=1.1.1");
     expect(first.json).toMatchObject({ paidPlacesLeft: 2, paidScans: 0 });
     const { rows } = await s.db.query<{ release: string; paid_places: number }>("SELECT release, paid_places FROM scan_releases ORDER BY release");
-    expect(rows).toEqual([{ release: "1.1.0", paid_places: 2 }]);
+    expect(rows).toEqual([{ release: "1.1.1", paid_places: 2 }]);
 
-    await s.db.query("UPDATE scan_releases SET paid_places = 37 WHERE release = '1.1.0'");
+    await s.db.query("UPDATE scan_releases SET paid_places = 37 WHERE release = '1.1.1'");
     s.advance(61_000);
-    expect((await s.get("/attestations/count?release=1.1.0")).json).toMatchObject({ paidPlacesLeft: 37 });
+    expect((await s.get("/attestations/count?release=1.1.1")).json).toMatchObject({ paidPlacesLeft: 37 });
+  });
+
+  it("opens at least 50 paid places on an x.y.0 release", async () => {
+    const s = await twoReleases();
+    expect((await s.get("/attestations/count?release=1.1.0")).json).toMatchObject({ paidPlacesLeft: 50, paidScans: 0 });
+  });
+
+  it("keeps a total set before the floor", async () => {
+    const s = await twoReleases();
+    await s.db.query("INSERT INTO scan_releases (release, paid_places, created_at) VALUES ('1.1.0', 4, now())");
+
+    expect((await s.get("/attestations/count?release=1.1.0")).json).toMatchObject({ paidPlacesLeft: 4 });
   });
 });
