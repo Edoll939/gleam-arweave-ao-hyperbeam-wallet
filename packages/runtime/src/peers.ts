@@ -114,8 +114,9 @@ async function readDisabledPeerUrls(storage: StoragePort): Promise<string[]> {
 /**
  * Where L1 token reads go besides the gateway: the `L1_TOKEN_NODE_URLS`
  * that passed the last probe, then the peers it found serving them, less
- * any the user removed or turned off. With none of those left, every
- * shipped node, so the list is never empty.
+ * any the user removed or turned off. With none of those left, the shipped
+ * nodes the user kept, even ones the probe found down. That can be none:
+ * the reads still ask the gateway and the active peer.
  */
 export async function readL1NodeUrls(storage: StoragePort): Promise<string[]> {
   const [stored, dismissed, disabled] = await Promise.all([
@@ -123,11 +124,13 @@ export async function readL1NodeUrls(storage: StoragePort): Promise<string[]> {
     readDismissedPeers(storage),
     readDisabledPeerUrls(storage),
   ]);
-  const skipped = new Set([...httpsUrls(stored?.l1Down), ...dismissed, ...disabled]);
+  const refused = new Set([...dismissed, ...disabled]);
+  const kept = (url: string) => !refused.has(stripTrailingSlashes(url));
+  const down = new Set(httpsUrls(stored?.l1Down));
   const urls = [...new Set([...L1_TOKEN_NODE_URLS, ...httpsUrls(stored?.l1Urls)])].filter(
-    (url) => !skipped.has(stripTrailingSlashes(url)),
+    (url) => kept(url) && !down.has(stripTrailingSlashes(url)),
   );
-  return urls.length > 0 ? urls : [...L1_TOKEN_NODE_URLS];
+  return urls.length > 0 ? urls : L1_TOKEN_NODE_URLS.filter(kept);
 }
 
 /** Reads the last discovery result, if any. */
