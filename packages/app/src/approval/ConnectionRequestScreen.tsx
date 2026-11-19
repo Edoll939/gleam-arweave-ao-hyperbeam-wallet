@@ -3,6 +3,7 @@ import type { ConnectApprovalPreview, PermissionType } from "@gleam/core";
 import { Button } from "@gleam/ui/src/primitives/button.tsx";
 import { useT, type MessageKey } from "../i18n";
 import { UntrustedText } from "./UntrustedText";
+import { ArmingLabel } from "./ArmingLabel";
 
 /**
  * Ports `connection-request.html` (6.1): origin identity, "wants to:"
@@ -112,7 +113,7 @@ export function ConnectionRequestScreen({ origin, preview, onReject, onGrant }: 
             {t("approval.reject")}
           </Button>
           <Button type="button" variant="primary" onClick={onGrant} className="flex-1">
-            {t("approval.grant")}
+            <ArmingLabel>{t("approval.grant")}</ArmingLabel>
           </Button>
         </div>
       </div>
