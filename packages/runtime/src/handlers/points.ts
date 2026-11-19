@@ -67,6 +67,18 @@ export const POINTS_SHARE_SEEN_KEY = "local:points:shareSeen";
  */
 export const POINTS_SEATS_SEEN_KEY = "local:points:seatsSeen";
 
+/** Every per-install Points storage key, so a wipe can remove them all at once. */
+export const POINTS_STORAGE_KEYS = [
+  POINTS_DEVICE_STATE_KEY,
+  POINTS_MEMBERSHIPS_KEY,
+  POINTS_PENDING_INVITE_KEY,
+  POINTS_INVITE_UNLOCK_KEY,
+  POINTS_REVEAL_SEEN_KEY,
+  POINTS_CLAIM_PENDING_KEY,
+  POINTS_SHARE_SEEN_KEY,
+  POINTS_SEATS_SEEN_KEY,
+] as const;
+
 /**
  * A wallet earns only if its install sent a heartbeat in the 3 days before
  * a snapshot (POINTS.md § Rules). One every ~20 hours keeps a margin even

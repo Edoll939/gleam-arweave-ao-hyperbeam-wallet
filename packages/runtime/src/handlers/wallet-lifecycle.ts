@@ -47,6 +47,7 @@ import {
   generateJWK,
 } from "@gleam/core/signer";
 import { isSessionExpired, isValidSession, SESSION_KEY, type KeySession } from "./key-session";
+import { POINTS_STORAGE_KEYS } from "./points";
 import { userErrorMessage } from "@gleam/core/src/models/user-errors.ts";
 import { ACTIVE_WALLET_ID_KEY, ACTIVITY_LOG_KEY_PREFIX, BACKUP_KEY, BACKUP_STATE_KEY, WALLETS_KEY, WATCHED_PROCESS_IDS_KEY_PREFIX } from "../storage-keys";
 import { dappError } from "../dapp-error";
@@ -869,6 +870,10 @@ export class WalletLifecycleHandler {
     // The file stays in the account: a reset is for a forgotten password, and it may be remembered.
     await this.storage.remove(BACKUP_KEY);
     await this.storage.remove(BACKUP_STATE_KEY);
+    // Points state is keyed to the wiped wallets and to this install's device
+    // registration; leaving it behind would hand the memberships, any pending
+    // invite code and the heartbeat registration to the next wallet created.
+    await Promise.all(POINTS_STORAGE_KEYS.map((key) => this.storage.remove(key)));
     await saveSession(this.storage, null);
   }
 
