@@ -213,7 +213,9 @@ any two `await`s. For each multi-step flow (unlock, approve, sign,
 send): can a step be skipped, repeated or run out of order? What happens
 when the wallet locks while a signature is in flight? Is any
 check-then-act split across an `await`, so the state can change between
-the check and the act?
+the check and the act? A race that needs the worker to stop at one exact
+moment is `rare` and rates Low unless it leaks a key; a race the
+attacker can retry until it lands is not.
 
 **Encoding and limits.** base64url versus base64, BigInt parsing, tag
 encoding, JSON depth and size. Do two parts of the code decode the same
