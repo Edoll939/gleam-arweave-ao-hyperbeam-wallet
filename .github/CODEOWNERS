@@ -230,6 +230,8 @@
 /vitest.config.ts                                                         @skyf0xx
 /vitest.setup.ts                                                           @skyf0xx
 /playwright.config.ts                                                      @skyf0xx
+/e2e/egress.e2e.ts                                                         @skyf0xx
+/e2e/egress-hosts.ts                                                       @skyf0xx
 /osv-scanner.toml                                                         @skyf0xx
 /apps/extension/src/shims/function-bind.cjs                               @skyf0xx
 /.semgrepignore                                                           @skyf0xx

@@ -233,6 +233,8 @@
 5 vitest.config.ts
 5 vitest.setup.ts
 5 playwright.config.ts
+5 e2e/egress.e2e.ts
+5 e2e/egress-hosts.ts
 5 osv-scanner.toml
 5 apps/extension/src/shims/function-bind.cjs
 5 .semgrepignore
