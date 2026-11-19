@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { cn } from "@gleam/ui/src/primitives/cn.ts";
 import { useT, type TFunction } from "../../../i18n";
 import { BUILT_IN_SITES, knownSite, matchSites, pageTrail, parseAddress, siteHost, type KnownSite } from "./address";
-import { BUILT_IN_ICONS } from "./built-in-icons";
+import { BUILT_IN_ICONS, isMonoIcon } from "./built-in-icons";
 import { originOf, trailText, type BrowserVisit } from "./history";
 import { useVisitTime } from "./useVisitTime";
 
@@ -325,6 +325,14 @@ function SiteRow({ host, icon, insecure = false, caption, go = false, onOpen, on
 export function SiteAvatar({ host, icon }: { host: string; icon?: string }) {
   const [failed, setFailed] = useState(false);
   const letter = host.replace(/^www\./, "").charAt(0).toUpperCase();
+  if (icon && isMonoIcon(icon)) {
+    const mask = `url("${icon}") center / contain no-repeat`;
+    return (
+      <span aria-hidden="true" className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-mist">
+        <span data-mono-icon="" className="h-6 w-6 bg-foreground" style={{ mask, WebkitMask: mask }} />
+      </span>
+    );
+  }
   if (icon && !failed) {
     return (
       <span aria-hidden="true" className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-mist">

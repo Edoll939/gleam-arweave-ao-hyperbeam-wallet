@@ -142,7 +142,9 @@ describe("BrowserView start screen", () => {
       "bazar.arweave.net",
       "www.permatell.xyz",
     ]);
-    expect(dapps.querySelectorAll("img")).toHaveLength(3);
+    // ao and bazar are single-colour, so they take the theme's colour as a mask; permatell stays an image.
+    expect(dapps.querySelectorAll("[data-mono-icon]")).toHaveLength(2);
+    expect(dapps.querySelectorAll("img")).toHaveLength(1);
     const saved = screen.getByRole("region", { name: "Saved" });
     expect(saved.querySelector("img")?.getAttribute("src")).toBe(PNG);
     // A recent site has no stored icon, so it keeps its letter.
