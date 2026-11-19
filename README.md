@@ -44,21 +44,26 @@ whatever bytes a site passes, such as a hash the site computed. Use `signMessage
 
 Use `window.gleam` instead of `window.arweaveWallet`.
 
-If `window.gleam` is `undefined`, Gleam is not installed. Link to the
-[Chrome Web Store](https://chromewebstore.google.com/detail/gleam/einabcphdmlicabnjllaaallnebfkmki)
-instead.
+If `window.gleam` is `undefined`, Gleam is not installed. On a computer,
+link to [gleamwallet.app/download](https://gleamwallet.app/download)
+instead. On a phone, label the button "Open in Gleam" and link to
+`https://open.gleamwallet.app/browse?url=<your page, URL-encoded>`, which
+opens your dApp in the Gleam app, or the download page if the app is not
+installed.
 
 Use the [Gleam icon](apps/site/favicon.svg) next to the button text, set in
 `Inter` (Gleam's UI font) at medium weight:
 
 ```text
 [icon] Connect with Gleam
+[icon] Open in Gleam
 ```
 
 <details>
 <summary>Example</summary>
 
 ```js
+// <a id="connect-gleam" hidden><img src="gleam.svg" alt=""><span class="label">Connect with Gleam</span></a>
 const button = document.querySelector("#connect-gleam");
 
 function showButton() {
@@ -67,7 +72,15 @@ function showButton() {
 showButton();
 window.addEventListener("gleamWalletLoaded", showButton);
 
-button.addEventListener("click", async () => {
+if (!window.gleam && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+  button.href = `https://open.gleamwallet.app/browse?url=${encodeURIComponent(location.href)}`;
+  button.querySelector(".label").textContent = "Open in Gleam";
+  button.hidden = false;
+}
+
+button.addEventListener("click", async (event) => {
+  if (!window.gleam) return;
+  event.preventDefault();
   await window.gleam.connect(["ACCESS_ADDRESS", "SIGN_TRANSACTION"], {
     name: "My dApp",
     logo: "https://example.com/logo.png",

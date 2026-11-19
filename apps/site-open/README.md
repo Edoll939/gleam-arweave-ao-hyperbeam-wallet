@@ -13,6 +13,9 @@ installed, the page redirects the visitor to the main website instead.
 - **`attest.html`, `attest.js`**: the fallback used when the app does not
   open a scan link, which forwards the visitor to the main site's
   `attest.html`.
+- **`vercel.json`'s `/browse` redirect**: the fallback used when the app
+  does not open a browse link (a dApp's "open in Gleam" link), which
+  sends the visitor to the main site's download page.
 - **`verify.mjs`**: runs during each deploy and stops it if a link file
   still contains placeholder values.
 - **`vercel.json`**: hosting settings.

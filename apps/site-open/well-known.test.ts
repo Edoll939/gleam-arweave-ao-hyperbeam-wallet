@@ -5,11 +5,15 @@ import { describe, expect, it } from "vitest";
 const read = (name: string) => JSON.parse(readFileSync(resolve(__dirname, ".well-known", name), "utf8"));
 
 describe("open.gleamwallet.app association files", () => {
-  it("claims exactly the two Points paths for the iOS app id", () => {
+  it("claims exactly the two Points paths and the browse path for the iOS app id", () => {
     const [detail] = read("apple-app-site-association").applinks.details;
     expect(detail.appIDs).toHaveLength(1);
     expect(detail.appIDs[0]).toMatch(/\.app\.gleamwallet$/);
-    expect(detail.components).toEqual([{ "/": "/invite", "?": { code: "?*" } }, { "/": "/attest" }]);
+    expect(detail.components).toEqual([
+      { "/": "/invite", "?": { code: "?*" } },
+      { "/": "/attest" },
+      { "/": "/browse", "?": { url: "?*" } },
+    ]);
   });
 
   it("delegates to the Android package", () => {

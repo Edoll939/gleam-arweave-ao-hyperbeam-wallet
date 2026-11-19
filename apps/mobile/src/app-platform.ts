@@ -6,6 +6,7 @@ import providerScript from "virtual:gleam-provider-script";
 import { version } from "../package.json";
 import { onAppAway } from "./adapters/app-away";
 import { createLinkNotices, listenForAppLinks } from "./adapters/app-links";
+import { createBrowseLinks } from "./adapters/browse-link";
 import { createApprovalSheet, serveApprovalSheet } from "./adapters/approval-sheet";
 import { createBackButton } from "./adapters/back-button";
 import { createBiometricUnlock } from "./adapters/biometric-unlock";
@@ -85,9 +86,14 @@ export async function createMobileAppPlatform({ onInviteGateChanged }: MobileApp
   onAppAway(() => approvalSheet.dismissAll());
   // Set `VITE_FOUNDING_GATE=false` for the Phase 2 build; it's on otherwise.
   const foundingGate = import.meta.env.VITE_FOUNDING_GATE !== "false";
-  listenForAppLinks(workerRuntime.openLink, () => {
-    if (foundingGate) onInviteGateChanged();
-  });
+  const browseLinks = createBrowseLinks();
+  listenForAppLinks(
+    workerRuntime.openLink,
+    () => {
+      if (foundingGate) onInviteGateChanged();
+    },
+    (page) => browseLinks.open(page),
+  );
   // The worker's intervals stop while the app is in the background; this
   // runs the ones that came due, auto-lock among them.
   void App.addListener("resume", () => {
@@ -127,6 +133,7 @@ export async function createMobileAppPlatform({ onInviteGateChanged }: MobileApp
     qrScanner: preview?.qrScanner ?? createQrScanner(),
     storeReview: preview?.storeReview ?? createStoreReview(),
     dappBrowser,
+    browseLinks,
     backButton: createBackButton(),
     approvalSheet,
     ...(preview ? {} : { secureScreen: createSecureScreen() }),

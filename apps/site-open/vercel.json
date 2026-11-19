@@ -4,7 +4,8 @@
   "outputDirectory": ".",
   "redirects": [
     { "source": "/", "destination": "https://gleamwallet.app/", "permanent": false },
-    { "source": "/invite", "destination": "https://gleamwallet.app/invite.html", "permanent": false }
+    { "source": "/invite", "destination": "https://gleamwallet.app/invite.html", "permanent": false },
+    { "source": "/browse", "destination": "https://gleamwallet.app/download", "permanent": false }
   ],
   "rewrites": [{ "source": "/attest", "destination": "/attest.html" }],
   "headers": [
