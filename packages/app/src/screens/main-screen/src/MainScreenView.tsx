@@ -901,7 +901,8 @@ export function MainScreenView({
           </div>
 
           <div className="px-6 pb-6 pt-3 phone:px-5 phone:pb-4 phone:pt-2">
-            <Beam />
+            {/* With no chart above it, a full-width beam reads as an underline on the balance. */}
+            <Beam className={headerStyle === "minimal" ? "w-[72px]" : undefined} />
           </div>
 
           <div className="px-6 pb-5 phone:px-5 phone:pb-4">
