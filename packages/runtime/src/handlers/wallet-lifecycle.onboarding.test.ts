@@ -11,6 +11,7 @@ import {
 } from "@gleam/core";
 import { VaultKdfError, Keyring } from "@gleam/core/signer";
 import { WalletLifecycleHandler } from "./wallet-lifecycle";
+import { POINTS_STORAGE_KEYS } from "./points";
 import { createKeySession, SESSION_KEY } from "./key-session";
 
 vi.mock("hash-wasm", async (importOriginal) => {
@@ -1505,6 +1506,19 @@ describe("WalletLifecycleHandler: resetAllWallets", () => {
     expect(await storage.get("local:browserRecentSites")).toBeNull();
     expect(await storage.get(`local:activityLog:${wallet.address}`)).toBeNull();
     expect(await storage.get(`local:watchedProcessIds:${wallet.address}`)).toBeNull();
+    expect(await storage.get("local:networkSettings")).toEqual({ gatewayUrl: "https://arweave.net" });
+  });
+
+  it("removes the Gleam Points state keyed to the wiped wallets", async () => {
+    const storage = createFakeStorage();
+    const handler = new WalletLifecycleHandler(storage, keySession, TEST_KDF);
+    await handler.createWallet({ name: "First", password: GOOD_PASSWORD });
+    for (const key of POINTS_STORAGE_KEYS) await storage.set(key, { seeded: true });
+    await storage.set("local:networkSettings", { gatewayUrl: "https://arweave.net" });
+
+    await handler.resetAllWallets();
+
+    for (const key of POINTS_STORAGE_KEYS) expect(await storage.get(key)).toBeNull();
     expect(await storage.get("local:networkSettings")).toEqual({ gatewayUrl: "https://arweave.net" });
   });
 
