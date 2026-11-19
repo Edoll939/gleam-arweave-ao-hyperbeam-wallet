@@ -36,10 +36,21 @@ and ask Will to run
 from a bot call means the same. Never print, log or paste the token, and
 never fall back to Will's account for a closing comment without asking.
 
-A dock comment starts with `Docked:` and gives the reason in plain
-language (see the closing-comment rule). Try the comment through the bot
-first. If the advisory API has no comment endpoint for an app, say so and
-leave the comment for Will.
+Closing comments are firm: no thanks, no softening. A dock comment
+names the points from the `scan-dock` preview (0 if none were left),
+mentions the reporter, and gives the reason as one sentence at about
+grade 7:
+
+```text
+Docked <N> points for mislabelling the severity of this report @<login>. <One-sentence reason.>
+```
+
+For example: "Docked 12 points for mislabelling the severity of this
+report @someone. Only a person who already has the unlocked phone can
+change its clock, so this is Low." The bot can't edit or delete an
+advisory comment, so get it right before posting. If the advisory API
+has no comment endpoint for an app, say so and leave the comment for
+Will.
 
 ## 1. Triage each report
 
@@ -156,8 +167,9 @@ findings accepted in it, the highest-rated earns the best-finding bonus
 `--severity best` with its advisory's `--ref`; the script records it
 under `<ref>#best`. List it with the other awards for Will's approval.
 
-**Dock.** For each report § 1 says to dock, close it with its reason,
-then preview and run, with the closed report's link:
+**Dock.** For each report § 1 says to dock, preview the dock to get
+its points, post the dock comment (§ Acting as the bot), close the
+report, then run the dock with the closed report's link:
 
 ```bash
 echo n | pnpm exec tsx --env-file=local.env scripts/scan-dock.ts \
