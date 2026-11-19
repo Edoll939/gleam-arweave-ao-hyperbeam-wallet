@@ -142,6 +142,13 @@ describe("Collectibles tab", () => {
     expect(onTabChange).toHaveBeenCalledWith("collectibles");
   });
 
+  it("comes back from the detail screen with the list docked, not at the top", () => {
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    renderMain(runtimeWith(async () => [FROG]), { initialTab: "collectibles" });
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: "auto" }));
+    scrollTo.mockRestore();
+  });
+
   it("keeps a thumbnail pulsing rather than showing the file icon after one failed load", async () => {
     renderMain(runtimeWith(async () => [FROG]), { initialTab: "collectibles" });
     const tileImages = () => screen.getAllByTestId("collectible-tile").flatMap((tile) => Array.from(tile.querySelectorAll("img")));

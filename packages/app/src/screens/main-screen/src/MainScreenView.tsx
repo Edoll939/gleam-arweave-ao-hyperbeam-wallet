@@ -698,10 +698,11 @@ export function MainScreenView({
    * by expanding the hidden-tokens disclosure, which both want the list in
    * full view rather than scrolled to wherever the click happened.
    */
-  const scrollListToDockedTop = () => {
+  const scrollListToDockedTop = (instant = false) => {
     const section = listSectionRef.current;
     if (!section) return;
-    const behavior: ScrollBehavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    const behavior: ScrollBehavior =
+      instant || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
     if (listDocked) {
       section.scrollTo?.({ top: 0, behavior });
       return;
@@ -722,9 +723,12 @@ export function MainScreenView({
     scrollListToDockedTop();
   };
 
+  // Mount only: put the list where toggling edit mode leaves it. A restored
+  // tab means a detail screen was opened from the docked list, so it comes
+  // back docked rather than replaying the slide.
   useEffect(() => {
-    if (initialTokenEditing) scrollListToDockedTop();
-    // Mount only: put the list where toggling edit mode leaves it.
+    if (initialTab !== "tokens") scrollListToDockedTop(true);
+    else if (initialTokenEditing) scrollListToDockedTop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
