@@ -11,6 +11,7 @@ export const BUILT_IN_SITES: readonly string[] = [
   "https://bazar.arweave.net/",
   "https://ao.arweave.net/",
   "https://www.permatell.xyz/",
+  "https://iwashere.ar.io/",
 ].sort((a, b) => sortName(a).localeCompare(sortName(b)));
 
 export interface SiteHost {

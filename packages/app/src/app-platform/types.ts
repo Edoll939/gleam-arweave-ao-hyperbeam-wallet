@@ -226,6 +226,12 @@ export interface DappBrowserPort {
   subscribe(listener: (event: DappBrowserEvent) => void): () => void;
 }
 
+/** dApp pages a link from outside the app asked to open in the browser screen. */
+export interface BrowseLinkPort {
+  /** Calls `onOpen` with each page, the one already waiting first. Returns the unsubscribe function. */
+  subscribe(onOpen: (url: string) => void): () => void;
+}
+
 /**
  * Keeps what's on screen out of screenshots and the app switcher while a
  * screen shows a secret. `protect` returns its release; protection stays on
@@ -258,6 +264,8 @@ export interface AppPlatform {
   storeReview: StoreReviewPort;
   /** Reached only when `capabilities.dappBrowser` is on. */
   dappBrowser: DappBrowserPort;
+  /** Omitted where no link from outside the app can open a dApp. */
+  browseLinks?: BrowseLinkPort;
   /** Omitted where the host has no system back press. */
   backButton?: BackButtonPort;
   /** Omitted where each approval gets its own window. */

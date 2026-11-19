@@ -25,13 +25,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Exact paths, not prefixes: only the two Points links the worker parses. -->
+            <!-- Exact paths, not prefixes: the two Points links the worker parses and the browse link. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="open.gleamwallet.app" android:path="/invite" />
                 <data android:scheme="https" android:host="open.gleamwallet.app" android:path="/attest" />
+                <data android:scheme="https" android:host="open.gleamwallet.app" android:path="/browse" />
             </intent-filter>
 
         </activity>

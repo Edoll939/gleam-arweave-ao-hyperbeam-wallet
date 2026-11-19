@@ -140,6 +140,8 @@ describe("BrowserView start screen", () => {
     expect(within(dapps).getAllByRole("button").map((row) => row.textContent)).toEqual([
       "ao.arweave.net",
       "bazar.arweave.net",
+      // No bundled icon, so its tile leads with its letter.
+      "Iiwashere.ar.io",
       "www.permatell.xyz",
     ]);
     // ao and bazar are single-colour, so they take the theme's colour as a mask; permatell stays an image.

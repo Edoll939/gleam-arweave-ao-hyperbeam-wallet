@@ -230,9 +230,9 @@
       openApp.href = "https://open.gleamwallet.app/invite?code=" + encodeURIComponent(inviteCode);
       document.querySelector("[data-open-app-wrap]").hidden = false;
     }
-    // The extension's store page is no use on a phone: the main button goes
-    // to the app's install page instead, and says so, since the page can't
-    // tell whether the app is already there. The ticket keeps the code to copy.
+    // On a phone the main button opens the download page on the app, and
+    // says so, since the page can't tell whether the app is already there.
+    // The ticket keeps the code to copy.
     var accept = document.querySelector("[data-accept-invite]");
     var phone = /Android/i.test(navigator.userAgent)
       ? "android"
@@ -240,7 +240,7 @@
         ? "ios"
         : "";
     if (accept && phone) {
-      accept.href = phone + ".html";
+      accept.href = "download.html?platform=" + phone;
       accept.textContent = "Get Gleam";
       accept.setAttribute("data-umami-event", "invite-accept-" + phone);
     }
