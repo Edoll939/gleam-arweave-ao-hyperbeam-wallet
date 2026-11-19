@@ -21,6 +21,7 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.webkit.ProfileStore
 import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebViewCompat
@@ -56,6 +57,8 @@ internal class DappWebView(
 
     /** Null after a second renderer crash, until `reload` makes a new one. */
     private var webView: WebView? = null
+    /** Holds [webView] in the container, and reloads it on a pull down from the top. */
+    private var frame: SwipeRefreshLayout? = null
     /** Catches the URL of a `target=_blank` link or `window.open`. */
     private var popup: WebView? = null
     private var hidden = false
@@ -110,7 +113,7 @@ internal class DappWebView(
 
     fun setLayout(params: FrameLayout.LayoutParams) {
         layout = params
-        webView?.layoutParams = params
+        frame?.layoutParams = params
     }
 
     fun onPause() {
@@ -123,7 +126,7 @@ internal class DappWebView(
 
     fun setHidden(hidden: Boolean) {
         this.hidden = hidden
-        webView?.visibility = if (hidden) View.INVISIBLE else View.VISIBLE
+        frame?.visibility = if (hidden) View.INVISIBLE else View.VISIBLE
     }
 
     fun close() {
@@ -222,13 +225,24 @@ internal class DappWebView(
         }
         view.webViewClient = Client()
         view.webChromeClient = ChromeClient()
-        view.visibility = if (hidden) View.INVISIBLE else View.VISIBLE
-        container.addView(view, layout)
+        val holder = SwipeRefreshLayout(activity)
+        holder.setOnRefreshListener { reload() }
+        holder.addView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        holder.visibility = if (hidden) View.INVISIBLE else View.VISIBLE
+        container.addView(holder, layout)
+        frame = holder
         return view
     }
 
     private fun destroy(view: WebView) {
-        container.removeView(view)
+        val holder = view.parent as? SwipeRefreshLayout
+        if (holder != null) {
+            holder.removeView(view)
+            container.removeView(holder)
+            if (holder === frame) frame = null
+        } else {
+            container.removeView(view)
+        }
         view.stopLoading()
         view.webViewClient = WebViewClient()
         view.webChromeClient = null
@@ -301,6 +315,7 @@ internal class DappWebView(
             if (view !== webView) return
             loading = false
             crashedThisLoad = false
+            frame?.isRefreshing = false
             emitNavigation()
         }
 
@@ -312,6 +327,7 @@ internal class DappWebView(
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
             if (view !== webView || !request.isForMainFrame) return
+            frame?.isRefreshing = false
             val description = error.description?.toString() ?: ""
             // A navigation the page or this view replaced or cancelled.
             if (description.contains("ERR_ABORTED")) return

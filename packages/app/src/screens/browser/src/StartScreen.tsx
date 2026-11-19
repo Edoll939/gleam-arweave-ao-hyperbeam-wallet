@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { cn } from "@gleam/ui/src/primitives/cn.ts";
 import { useT, type TFunction } from "../../../i18n";
-import { BUILT_IN_SITES, knownSite, matchSites, parseAddress, siteHost, type KnownSite } from "./address";
+import { BUILT_IN_SITES, knownSite, matchSites, pageTrail, parseAddress, siteHost, type KnownSite } from "./address";
 import { BUILT_IN_ICONS } from "./built-in-icons";
 import { originOf, trailText, type BrowserVisit } from "./history";
 import { useVisitTime } from "./useVisitTime";
@@ -69,7 +69,13 @@ export function StartScreen({
           <SiteRow key={site.url} host={site.host} icon={iconOf(site.url)} onOpen={() => onOpen(site.url)} />
         ))}
         {address && typed ? (
-          <SiteRow host={typed.host} insecure={typed.insecure} caption={t("browser.openAddress")} onOpen={() => onOpen(address)} />
+          <SiteRow
+            host={typed.host}
+            insecure={typed.insecure}
+            caption={pageTrail(address, { idEnds: true }).join(" › ") || t("browser.openAddress")}
+            go
+            onOpen={() => onOpen(address)}
+          />
         ) : null}
         {!address && matches.length === 0 ? (
           <p className="px-0 py-4 text-label text-muted">{t("browser.noMatch")}</p>
@@ -230,12 +236,14 @@ interface SiteRowProps {
   icon?: string;
   insecure?: boolean;
   caption?: string;
+  /** Ends the row with an arrow: it opens what was typed. */
+  go?: boolean;
   onOpen: () => void;
   /** Present on a saved site: holding the row asks to remove it. */
   onRemove?: () => void;
 }
 
-function SiteRow({ host, icon, insecure = false, caption, onOpen, onRemove }: SiteRowProps) {
+function SiteRow({ host, icon, insecure = false, caption, go = false, onOpen, onRemove }: SiteRowProps) {
   const t = useT();
   const [removing, setRemoving] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -285,6 +293,11 @@ function SiteRow({ host, icon, insecure = false, caption, onOpen, onRemove }: Si
             </span>
           ) : null}
         </span>
+        {go ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="mr-1 shrink-0 text-muted">
+            <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ) : null}
       </button>
       {removing ? (
         <>

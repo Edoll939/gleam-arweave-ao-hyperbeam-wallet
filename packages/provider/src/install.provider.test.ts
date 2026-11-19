@@ -68,6 +68,19 @@ describe("installProvider routes window.arweaveWallet", () => {
     expect(relayed).toHaveBeenCalledTimes(1);
   });
 
+  it("gives arweaveWalletName at window.arweaveWallet, and 'Gleam' at window.gleam", () => {
+    teardown = installProvider({ transport: fake.transport, walletVersion: VERSION, arweaveWalletName: "ArConnect" });
+    expect(current()?.walletName).toBe("ArConnect");
+    expect({ ...current() }.walletName).toBe("ArConnect");
+    expect((window as unknown as { gleam: Wallet }).gleam.walletName).toBe("Gleam");
+  });
+
+  it("leaves another wallet's name alone under arweaveWalletName", () => {
+    installOther(wander());
+    teardown = installProvider({ transport: fake.transport, walletVersion: VERSION, arweaveWalletName: "ArConnect" });
+    expect(current()?.walletName).toBe("Wander");
+  });
+
   it("installs window.arweaveWallet with walletName 'Gleam' when none exists", () => {
     teardown = install();
     expect(current()?.walletName).toBe("Gleam");

@@ -6,6 +6,7 @@ import { useAddressIdentity } from "../address-identity";
 import { useT } from "../i18n";
 import { errorText } from "../i18n/errors";
 import { RequestHeader } from "../transfer-review/RequestHeader";
+import { ArmingLabel } from "./ArmingLabel";
 import { UntrustedText } from "./UntrustedText";
 
 /**
@@ -97,7 +98,7 @@ export function AddTokenScreen({ origin, siteIcon, preview, onReject, onAdd }: A
             onClick={() => void handleAdd()}
             className="flex-1"
           >
-            {submitting ? t("approval.adding") : t("approval.addToken")}
+            {submitting ? t("approval.adding") : <ArmingLabel>{t("approval.addToken")}</ArmingLabel>}
           </Button>
         </div>
       </div>

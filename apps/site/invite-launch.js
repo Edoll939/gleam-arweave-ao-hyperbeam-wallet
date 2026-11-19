@@ -308,7 +308,21 @@
       });
   }
 
+  // Tracked here, not with data-umami-event: Umami's click hook cancels the
+  // click and follows the link itself once the event is sent, which would
+  // skip the launch. The data-umami-event-* tags pages.js adds still ride along.
+  function track() {
+    if (!window.umami) return;
+    var data = {};
+    Array.prototype.forEach.call(link.attributes, function (a) {
+      var m = /^data-umami-event-(.+)$/.exec(a.name);
+      if (m) data[m[1]] = a.value;
+    });
+    window.umami.track(link.getAttribute("data-launch-event"), data);
+  }
+
   link.addEventListener("click", function (e) {
+    track();
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if (!program.motion() || !link.animate) return;
     e.preventDefault();

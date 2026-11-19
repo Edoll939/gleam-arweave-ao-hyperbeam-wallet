@@ -13,6 +13,7 @@ import { useAddressIdentity } from "../address-identity";
 import { useT } from "../i18n";
 import { UntrustedText } from "../approval/UntrustedText";
 import { SignedDataText } from "../approval/SignedDataText";
+import { ArmingLabel } from "../approval/ArmingLabel";
 import { DataItemCard } from "./DataItemCard";
 import {
   amountText,
@@ -189,7 +190,7 @@ export function ReviewButtons({
           onClick={onPrimary}
           className="h-12"
         >
-          {primaryLabel}
+          <ArmingLabel>{primaryLabel}</ArmingLabel>
         </Button>
       ) : null}
     </div>

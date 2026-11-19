@@ -34,14 +34,17 @@ export function siteHost(url: string): SiteHost | null {
 /** A segment that reads as an ID (a tx id, hash or token) rather than a word. */
 const ID_SEGMENT = /^(?=.*\d)[A-Za-z0-9_-]{16,}$/;
 const MAX_SEGMENT = 32;
+/** How much of each end of an ID `pageTrail` keeps when asked to. */
+const ID_ENDS = 4;
 
 /**
  * Where on its site `url` is, as path segments to show after the host:
  * `/pomp/claim/72mV…` is `["pomp", "claim", "…"]`. An ID-like or long
- * segment becomes `…` (runs of them one `…`), and the query is left out.
+ * segment becomes `…` (runs of them one `…`), or with `idEnds` its first
+ * and last few characters (`72mV…CVro`), and the query is left out.
  * A hash route (`/#/asset/…`, common on Arweave gateways) counts as the path.
  */
-export function pageTrail(url: string): string[] {
+export function pageTrail(url: string, { idEnds = false }: { idEnds?: boolean } = {}): string[] {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -62,7 +65,8 @@ export function pageTrail(url: string): string[] {
     // A decoded bidi override could make the path draw over the host.
     segment = segment.replace(/[\p{Cc}\p{Cf}]/gu, "");
     if (segment === "") continue;
-    const shown = segment.length > MAX_SEGMENT || ID_SEGMENT.test(segment) ? "…" : segment;
+    const shortened = segment.length > MAX_SEGMENT || ID_SEGMENT.test(segment);
+    const shown = !shortened ? segment : idEnds ? `${segment.slice(0, ID_ENDS)}…${segment.slice(-ID_ENDS)}` : "…";
     if (shown === "…" && trail[trail.length - 1] === "…") continue;
     trail.push(shown);
   }

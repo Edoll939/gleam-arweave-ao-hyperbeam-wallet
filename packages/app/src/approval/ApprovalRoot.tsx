@@ -38,6 +38,7 @@ import { errorText } from "../i18n/errors";
 import { recipientsOf, transferRequestFromPreview } from "../transfer-review/model";
 import { useApprovalTransferContext } from "../transfer-review/useApprovalTransferContext";
 import { INPUT_ARM_DELAY_MS, useInputArmed } from "./input-arming";
+import { InputArmedContext } from "./ArmingLabel";
 
 /**
  * The approval UI's top-level state machine, in a window or a sheet: loads the pending
@@ -513,7 +514,7 @@ function ApprovalRootContent({
             event.stopPropagation();
           }}
         >
-          {content}
+          <InputArmedContext.Provider value={!guardClicks}>{content}</InputArmedContext.Provider>
         </div>
       </div>
     </AddressIdentityProvider>

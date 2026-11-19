@@ -149,7 +149,17 @@ public class DappViewPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         DispatchQueue.main.async { [weak self] in
-            self?.dappView?.webView.isHidden = hidden
+            guard let self else { return call.resolve() }
+            self.dappView?.webView.isHidden = hidden
+            if hidden {
+                // A hidden view keeps first responder, so the app's page
+                // would report no focus and the approval sheet's buttons,
+                // which arm only once the page has focus, would take a tap
+                // just to focus it.
+                self.dappView?.webView.endEditing(true)
+                _ = self.dappView?.webView.resignFirstResponder()
+                _ = self.bridge?.webView?.becomeFirstResponder()
+            }
             call.resolve()
         }
     }
