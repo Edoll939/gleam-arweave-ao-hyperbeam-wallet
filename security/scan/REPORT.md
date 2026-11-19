@@ -63,7 +63,7 @@ it:
   word.
 - `### Loss`: `key`, `unapproved`, `mismatch`, `control`, `disclosure` or
   `lockout`.
-- `### Requires`: `none`, `one-click` or `unusual`.
+- `### Requires`: `none`, `one-click`, `unusual` or `rare`.
 - `### Fix location`: `<file>#<function>`, the function a fix has to
   change at the tag, not where the symptom shows. Two reports of one bug
   usually name the same function, which is how a maintainer groups them.

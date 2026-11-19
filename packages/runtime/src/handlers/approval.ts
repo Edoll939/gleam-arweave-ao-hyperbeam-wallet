@@ -1442,6 +1442,12 @@ export class ApprovalHandler {
       let outcome: ApprovalOutcome;
       let result: unknown;
       try {
+        // Marked once the signatures check out, so a wrong one can be
+        // retried but a run a restart or failed save cut short never posts twice.
+        if (entry.attempted) throw new Error(userErrorMessage("approvalResolving", { id: req.requestId }));
+        await this.updatePending((current) =>
+          current.map((candidate) => (candidate.request.requestId === req.requestId ? { ...candidate, attempted: true as const } : candidate)),
+        );
         result = await this.finishDeviceSigning(walletId, wallet, this.signingInputOf(entry), payloads, signatures);
         outcome = await this.withheldIfLapsed(entry, { approved: true, result: toStored(result) });
       } catch (error) {

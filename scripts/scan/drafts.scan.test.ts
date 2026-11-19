@@ -20,6 +20,9 @@ describe("rubricSeverity", () => {
     expect(rubricSeverity("control", "unusual")).toBe("medium");
     expect(rubricSeverity("disclosure", "none")).toBe("medium");
     expect(rubricSeverity("lockout", "unusual")).toBe("low");
+    expect(rubricSeverity("key", "rare")).toBe("medium");
+    expect(rubricSeverity("unapproved", "rare")).toBe("low");
+    expect(rubricSeverity("control", "rare")).toBe("low");
     expect(rubricSeverity("none", "none")).toBe("low");
   });
 });
@@ -77,7 +80,7 @@ describe("draftProblems", () => {
     const out = await problems({ "advisory-1.md": goodAdvisory("x", { Attacker: "A hacker", Loss: "funds", Requires: "two-clicks" }) });
     expect(out).toEqual([
       expect.stringMatching(/Loss must be one of `key`/),
-      expect.stringMatching(/Requires must be one of `none`, `one-click`, `unusual`/),
+      expect.stringMatching(/Requires must be one of `none`, `one-click`, `unusual`, `rare`/),
       expect.stringMatching(/Attacker must name a row of docs\/THREAT_MODEL\.md § Attackers: "Malicious website"/),
     ]);
   });

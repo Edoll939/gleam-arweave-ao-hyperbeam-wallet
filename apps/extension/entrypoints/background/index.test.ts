@@ -1635,6 +1635,12 @@ describe("background.ts: providerCall privilege-tier choke point", () => {
         { id: "wallet-1", address: "addr-1", name: "Main", method: "jwk", publicKey: "pub", createdAt: 0, updatedAt: 0, encryptedKeyfile: null },
       ]);
       await setItem("local:activeWalletId", "wallet-1");
+      await setItem("session:unlockedSession", {
+        unlockedAt: Date.now(),
+        lastActivityAt: Date.now(),
+        autoLockTimeout: "1hr",
+        unlockedWalletIds: ["wallet-1"],
+      });
       tabsQuery.mockResolvedValue([{ id: 7, url: `${ORIGIN}/app` }]);
     });
 

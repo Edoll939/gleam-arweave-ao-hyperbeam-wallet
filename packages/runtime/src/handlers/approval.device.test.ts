@@ -1015,3 +1015,40 @@ describe("ApprovalHandler: what the device signs is what was approved", () => {
     await rejected;
   });
 });
+
+describe("ApprovalHandler: a device transfer posts once", () => {
+  it("refuses a second submit after a restart cut the first one short", async () => {
+    const calls = mockNetwork();
+    const { pending, requestId, device } = await approveOnDevice(() =>
+      transfer.submitTransfer({ walletId: HW_ID, token: null, recipient: RECIPIENT, amount: "10", fee: "1000" }),
+    );
+    void pending.catch(() => {});
+
+    // The first submit posts, then the worker stops before the outcome is written.
+    const finish = transfer.finishDeviceTransfer.bind(transfer);
+    transfer.finishDeviceTransfer = (async (...args: Parameters<typeof finish>) => {
+      await finish(...args);
+      return new Promise(() => {});
+    }) as typeof finish;
+    void handler.submitDeviceSignature({ requestId, signatures: await deviceSign(device, deviceKey) }).catch(() => {});
+    await vi.waitFor(() => expect(calls).toContain(`POST ${GATEWAY}:443/tx`));
+
+    transfer.finishDeviceTransfer = finish;
+    const restarted = new ApprovalHandler(storage, keySession, presenter, transfer, "https://bundler.example");
+    await expect(
+      restarted.submitDeviceSignature({ requestId, signatures: await deviceSign(device, deviceKey) }),
+    ).rejects.toThrow(/already being resolved/);
+    expect(calls.filter((call) => call === `POST ${GATEWAY}:443/tx`)).toHaveLength(1);
+  });
+
+  it("still takes a retry after a signature that doesn't verify", async () => {
+    mockNetwork();
+    const { pending, requestId, device } = await approveOnDevice(() =>
+      transfer.submitTransfer({ walletId: HW_ID, token: null, recipient: RECIPIENT, amount: "10", fee: "1000" }),
+    );
+    const wrong = device.payloads.map(() => bytesToBase64Url(new Uint8Array(512).fill(7)));
+    await expect(handler.submitDeviceSignature({ requestId, signatures: wrong })).rejects.toThrow();
+    await handler.submitDeviceSignature({ requestId, signatures: await deviceSign(device, deviceKey) });
+    await expect(pending).resolves.toMatchObject({ txId: expect.any(String) });
+  });
+});

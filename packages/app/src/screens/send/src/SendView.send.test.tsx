@@ -816,7 +816,7 @@ describe("SendView address book: your own wallets are known recipients (AO-SEND-
     fireEvent.change(textarea, { target: { value: OTHER_WALLET.address } });
     fireEvent.blur(textarea);
 
-    await waitFor(() => expect(send).toHaveBeenCalledWith({ type: "getState", payload: undefined }));
+    await waitFor(() => expect(send).toHaveBeenCalledWith({ type: "getState", payload: { recordActivity: false } }));
     await waitFor(() => expect(screen.queryByRole("checkbox", { name: "Save this address" })).toBeNull());
   });
 });
