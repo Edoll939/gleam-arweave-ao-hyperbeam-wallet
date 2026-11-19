@@ -242,7 +242,7 @@ voids it with `scan-void`, which removes its points and frees its paid
 place.
 
 **Limited payoff.** A scan earns a small, fixed amount, and a release
-pays at most 100 scans, fewer when little of its code is unexamined.
+pays at most 100 scans.
 Each further round adds only 10% of that amount. Finding real
 problems pays far more, and that can't be faked.
 
@@ -253,11 +253,12 @@ rise as the community grows.
 
 **Paid places.** A release opens one paid place for every 3 of its
 functions that aren't examined (Coverage carries across releases),
-rounded up, at least 1 and at most 100 (`paidPlacesFor`). The number
-is fixed the first time the release is asked for, normally by its first
-challenge, so it doesn't fall as scans examine functions. A patch
-release with nothing unexamined opens 1;
-releases scanned before this rule opened 100.
+rounded up, at most 100 (`paidPlacesFor`). An `x.y.0` release opens at
+least 50, so a new version always has paid work; a patch release opens
+at least 1. The number is fixed the first time the release is asked
+for, normally by its first challenge, so it doesn't fall as scans
+examine functions. Releases opened before the floor of 50 keep their
+number.
 
 **Scans.** Each paid scan earns **0.1% of the previous day's total
 holding points**, credited as soon as it's accepted. Every paid place

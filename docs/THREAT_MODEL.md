@@ -430,8 +430,8 @@ These are true of the current release.
   - Rate limits key on the first `X-Forwarded-For` entry, which holds
     only while the API sits behind Railway's edge.
   - One wallet scans each area of a release once and a release pays
-    1 to 100 scans, so many registered wallets can still take the paid
-    places.
+    1 to 100 scans (at least 50 for an `x.y.0`), so many registered
+    wallets can still take the paid places.
   - `GET /attestations` publishes each attestation's owner key,
     signature, report and answers, so anyone can verify without trusting
     Gleam.
