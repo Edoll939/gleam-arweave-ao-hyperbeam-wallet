@@ -143,6 +143,13 @@ export interface InstallProviderOptions {
   transport: ProviderTransport;
   /** The wallet's release version, which dApps compare against Wander's. */
   walletVersion: string;
+  /**
+   * The `walletName` `window.arweaveWallet` gives while Gleam answers it,
+   * in place of "Gleam". The app's browser, where no other wallet can be,
+   * passes Wander's ("ArConnect") so a site's Wander button reaches Gleam.
+   * `window.gleam` always says "Gleam".
+   */
+  arweaveWalletName?: string;
 }
 
 /**
@@ -178,7 +185,7 @@ export interface InstallProviderOptions {
  * Returns a teardown that stops listening and reclaiming the slot, for
  * tests.
  */
-export function installProvider({ transport, walletVersion }: InstallProviderOptions): () => void {
+export function installProvider({ transport, walletVersion, arweaveWalletName }: InstallProviderOptions): () => void {
   const providerListener = new AbortController();
   const gleamProvider = new GleamProvider(transport, walletVersion, providerListener.signal);
   const gleam = gleamProvider as unknown as WalletLike;
@@ -347,6 +354,7 @@ export function installProvider({ transport, walletVersion }: InstallProviderOpt
   const router = new Proxy(Object.create(null) as WalletLike, {
     get(_shell, prop) {
       if (prop === ROUTER_MARK) return true;
+      if (prop === "walletName" && arweaveWalletName !== undefined && target() === gleam) return arweaveWalletName;
       const value = Reflect.get(target(), prop);
       if (typeof value === "function" || (value === undefined && !decided() && eitherHasMethod(prop))) {
         return methodFor(prop);
@@ -367,7 +375,12 @@ export function installProvider({ transport, walletVersion }: InstallProviderOpt
     getOwnPropertyDescriptor(_shell, prop) {
       const descriptor = Reflect.getOwnPropertyDescriptor(target(), prop);
       if (!descriptor) return undefined;
-      const value = typeof descriptor.value === "function" ? methodFor(prop) : descriptor.value;
+      const value =
+        typeof descriptor.value === "function"
+          ? methodFor(prop)
+          : prop === "walletName" && arweaveWalletName !== undefined && target() === gleam
+            ? arweaveWalletName
+            : descriptor.value;
       return "value" in descriptor ? { ...descriptor, value, configurable: true } : { ...descriptor, configurable: true };
     },
   });
