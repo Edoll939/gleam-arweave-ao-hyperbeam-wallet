@@ -211,6 +211,7 @@ The beam has two sets. Dark mode uses its own: the same hues with less glare, so
 #### Using the Beam
 
 - **Dividers**: A thin 3px gradient bar separates major sections and creates visual breathing room
+- **Minimal header**: The beam is a 72px run on the left. With no chart above it, a full-width beam reads as an underline on the balance
 - **Loading shimmer**: A subtle moving highlight travels across content being loaded, hinting at the beam's colors
 - **Accent never fills**: The beam colors are never used for large solid fills or buttons—they're always linear, moving, or small accent points
 - **Purple limitation**: Beam purple is not used for text on the dark canvas; use it only for decorative or non-text contexts
