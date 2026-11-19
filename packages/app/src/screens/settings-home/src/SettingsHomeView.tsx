@@ -115,6 +115,7 @@ export function SettingsHomeView({
             options={[
               { value: "light", label: t("settingsHome.themeLight") },
               { value: "dark", label: t("settingsHome.themeDark") },
+              { value: "paper", label: t("settingsHome.themePaper") },
             ]}
             disabled={theme.saving}
             onChange={(next) => void theme.select(next)}

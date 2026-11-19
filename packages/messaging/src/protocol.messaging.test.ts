@@ -115,12 +115,12 @@ describe("ProtocolMap", () => {
     }>();
   });
 
-  it("getThemePreference/setThemePreference are exactly light or dark, never a system/auto value", () => {
+  it("getThemePreference/setThemePreference are exactly light, dark or paper, never a system/auto value", () => {
     expectTypeOf<ReturnType<ProtocolMap["getThemePreference"]>>().toEqualTypeOf<{
-      theme: "light" | "dark";
+      theme: "light" | "dark" | "paper";
     }>();
     expectTypeOf<Parameters<ProtocolMap["setThemePreference"]>[0]>().toEqualTypeOf<{
-      theme: "light" | "dark";
+      theme: "light" | "dark" | "paper";
     }>();
   });
 

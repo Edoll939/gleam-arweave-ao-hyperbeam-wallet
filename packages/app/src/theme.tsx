@@ -17,7 +17,13 @@ export function useSharedTheme(): ThemeContextValue | null {
   return useContext(ThemeContext);
 }
 
+/** Light is the unmarked default; every other theme names itself in `data-theme`. */
+export function themeAttribute(theme: ThemePreference): string | undefined {
+  return theme === "light" ? undefined : theme;
+}
+
 export function applyDocumentTheme(theme: ThemePreference) {
-  if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
+  const value = themeAttribute(theme);
+  if (value) document.documentElement.setAttribute("data-theme", value);
   else document.documentElement.removeAttribute("data-theme");
 }
