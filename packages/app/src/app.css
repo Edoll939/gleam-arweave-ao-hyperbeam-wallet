@@ -17,3 +17,11 @@ html[data-theme="dark"] {
   background: var(--color-background);
   color-scheme: dark;
 }
+
+/*
+ * Without it the light theme leaves the scheme to the device, so a site
+ * icon's SVG drawn on a light tile still takes the device's dark colours.
+ */
+html:not([data-theme="dark"]) {
+  color-scheme: light;
+}
