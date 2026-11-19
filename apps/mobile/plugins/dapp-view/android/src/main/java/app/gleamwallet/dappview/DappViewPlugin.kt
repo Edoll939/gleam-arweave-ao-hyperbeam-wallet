@@ -195,6 +195,10 @@ class DappViewPlugin : Plugin() {
         }
         bridge.executeOnMainThread {
             dappView?.setHidden(hidden)
+            // A hidden view can keep focus, so the app's page would report
+            // none and the approval sheet's buttons, which arm only once the
+            // page has focus, would take a tap just to focus it.
+            if (hidden) bridge.webView.requestFocus()
             call.resolve()
         }
     }

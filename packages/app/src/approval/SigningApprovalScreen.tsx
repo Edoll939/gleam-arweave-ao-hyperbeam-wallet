@@ -9,6 +9,7 @@ import { SignedDataText } from "./SignedDataText";
 import { DataItemCard } from "../transfer-review/DataItemCard";
 import { TagTiers } from "../transfer-review/TagTiers";
 import { RequestHeader } from "../transfer-review/RequestHeader";
+import { ArmingLabel } from "./ArmingLabel";
 import { ReviewButtons, TransferReview } from "../transfer-review/TransferReview";
 import { requestTypeText, transferRequestFromPreview, type TransferContext } from "../transfer-review/model";
 import { CopyIcon } from "@gleam/ui/src/primitives/copy-icons.tsx";
@@ -213,7 +214,7 @@ export function SigningApprovalScreen({
             onClick={() => void handleSign()}
             className="flex-1"
           >
-            {submitting ? t("approval.signing") : actionCopy(preview, t)}
+            {submitting ? t("approval.signing") : <ArmingLabel>{actionCopy(preview, t)}</ArmingLabel>}
           </Button>
         </div>
       </div>

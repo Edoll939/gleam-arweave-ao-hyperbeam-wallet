@@ -12,6 +12,7 @@ import {
 import type { AttestationCheck } from "@gleam/messaging/src/protocol.ts";
 import type { SiteAttestResponse } from "@gleam/messaging/src/site-protocol.ts";
 import { Button } from "@gleam/ui/src/primitives/button.tsx";
+import { ArmingLabel } from "./ArmingLabel";
 import { FoundingGate } from "../screens/onboarding/src/FoundingGate";
 import { JoinNote } from "../screens/points/src/JoinNote";
 import { formatPoints } from "../screens/points/src/formatPoints";
@@ -279,7 +280,7 @@ function AttestationReview({
           onClick={() => void handleSign()}
           className="flex-1"
         >
-          {submitting ? t("approval.signing") : t("approval.sign")}
+          {submitting ? t("approval.signing") : <ArmingLabel>{t("approval.sign")}</ArmingLabel>}
         </Button>
       </div>
     </div>

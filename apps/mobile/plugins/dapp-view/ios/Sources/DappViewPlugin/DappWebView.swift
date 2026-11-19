@@ -62,6 +62,10 @@ final class DappWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
+        // Pulling down from the top of the page reloads it.
+        let refresh = UIRefreshControl()
+        refresh.addTarget(self, action: #selector(pulledToRefresh), for: .valueChanged)
+        webView.scrollView.refreshControl = refresh
         #if DEBUG
         if #available(iOS 16.4, *) {
             webView.isInspectable = true
@@ -88,6 +92,14 @@ final class DappWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     func reload() {
         crashedThisLoad = false
         webView.reload()
+    }
+
+    @objc private func pulledToRefresh() {
+        reload()
+    }
+
+    private func endRefreshing() {
+        webView.scrollView.refreshControl?.endRefreshing()
     }
 
     func close() {
@@ -186,13 +198,16 @@ final class DappWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         crashedThisLoad = false
+        endRefreshing()
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        endRefreshing()
         reportLoadError(error)
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        endRefreshing()
         reportLoadError(error)
     }
 

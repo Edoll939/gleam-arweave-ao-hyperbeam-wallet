@@ -261,7 +261,7 @@
 
     // The kind (never the code) rides along on the page's click events.
     function tagKind(kind) {
-      document.querySelectorAll("[data-umami-event]").forEach(function (el) {
+      document.querySelectorAll("[data-umami-event], [data-launch-event]").forEach(function (el) {
         el.setAttribute("data-umami-event-kind", kind);
       });
     }
@@ -362,7 +362,7 @@
         el.textContent = savedInvite.code;
       });
     }
-    document.querySelectorAll("[data-umami-event]").forEach(function (el) {
+    document.querySelectorAll("[data-umami-event], [data-launch-event]").forEach(function (el) {
       el.setAttribute("data-umami-event-visitor", visitor);
     });
   }
