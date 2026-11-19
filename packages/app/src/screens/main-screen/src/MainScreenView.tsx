@@ -942,7 +942,7 @@ export function MainScreenView({
           listDocked
             ? "gleam-dock-in fixed inset-x-0 bottom-0 top-[calc(4rem+var(--inset-top))] z-20 mx-auto max-w-[var(--content-max)] overflow-y-auto bg-background"
             : "min-h-[calc(100dvh-4rem)]"
-        } layered:rounded-t-[20px] layered:bg-surface layered:pt-2 gleam-paper-sheet ${listDocked || sheetSettled ? "" : "gleam-paper-settle"}`}
+        } layered:rounded-t-[20px] layered:bg-surface layered:pt-2 gleam-paper-sheet gleam-paper-grain ${listDocked || sheetSettled ? "" : "gleam-paper-settle"}`}
         style={listDocked ? ({ "--dock-offset": `${listDockOffsetRef.current}px` } as CSSProperties) : undefined}
         onAnimationEnd={(event) => {
           if (event.target === event.currentTarget) setSheetSettled(true);
@@ -951,7 +951,7 @@ export function MainScreenView({
         <div
           role="tablist"
           aria-label={t("mainScreen.tabsLabel")}
-          className="sticky top-0 z-10 flex items-center gap-1 bg-background pb-2.5 pt-1 phone:-mx-2.5 phone:pb-1 phone:pt-1 layered:gap-5 layered:bg-surface layered:px-3.5 phone:layered:mx-0 phone:layered:px-0"
+          className="gleam-paper-grain sticky top-0 z-10 flex items-center gap-1 bg-background pb-2.5 pt-1 phone:-mx-2.5 phone:pb-1 phone:pt-1 layered:gap-5 layered:bg-surface layered:px-3.5 phone:layered:mx-0 phone:layered:px-0"
         >
           <button
             type="button"

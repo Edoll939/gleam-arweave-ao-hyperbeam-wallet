@@ -932,6 +932,14 @@ select,
     0 -4px 10px rgba(40, 35, 25, 0.04);
 }
 
+/*
+ * The sheet's paper has a barely-there grain, laid over its own colour.
+ * Its sticky tabs carry the same grain so they don't show as a clean band.
+ */
+[data-theme="paper"] .gleam-paper-grain {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16  0 0 0 0 0.14  0 0 0 0 0.1  0 0 0 0.07 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+}
+
 /* A sheet is laid down: it settles into place with no bounce. */
 @keyframes gleam-paper-settle {
   from {
