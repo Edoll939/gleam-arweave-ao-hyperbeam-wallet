@@ -56,6 +56,9 @@ Stop and report to Will, without merging or closing, on any of these:
   computed path, minified code, hidden Unicode
   (`gh pr diff <n> | grep -nP '[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}]'`).
 - A diff that does more than its description says.
+- Any path listed in `security/surface.txt`, or `e2e/egress-hosts.ts`.
+  Screen and judge it as usual, then hand it to Will with your
+  recommendation. Will reads the diff and merges it himself.
 
 A tight diff inside one module that only adds a check and its tests is
 the normal shape of a scan PR.
@@ -89,11 +92,10 @@ on with the others.
 
 ## 5. Merge
 
-1. **Surface box.** If CI's `surface` check fails, the PR touches
-   `security/surface.txt` paths. Tick the box by editing the body
-   (`gh pr edit <n> --body-file …`), adding the template line
-   `- [x] Touches \`security/surface.txt\` paths (the next release needs a fresh audit)`
-   if it is missing. Keep the rest of the body as written.
+1. **Surface box.** Never tick it on an outside PR. A failing `surface`
+   check means the PR touches `security/surface.txt` paths, so it should
+   already be with Will (section 2). He ticks the box after reading the
+   diff.
 2. **Signed commits.** Check
    `gh api repos/skyf0xx/gleam-arweave-ao-hyperbeam-wallet/pulls/<n>/commits --jq '.[].commit.verification.verified'`.
    If any is false, in a scratch worktree: fetch the PR head, cherry-pick
