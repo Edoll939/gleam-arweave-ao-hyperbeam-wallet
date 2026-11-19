@@ -2,6 +2,7 @@ import { App } from "@capacitor/app";
 import type { NoticePort } from "@gleam/app/src/app-platform/types.ts";
 import { LINK_NOTICE } from "../worker/link-notice";
 import type { PointsLinkOutcome } from "../worker/points-link";
+import { parseBrowseLink } from "./browse-link";
 
 /**
  * Hands every link the OS opens the app with to the runtime worker as the
@@ -9,10 +10,20 @@ import type { PointsLinkOutcome } from "../worker/points-link";
  * needs no `getLaunchUrl`: both platforms deliver the launch link as an
  * `appUrlOpen` that waits for this listener, so reading it too would run
  * it twice. `onGate` runs when an invite gave the Founding gate a new
- * verdict to show.
+ * verdict to show. A browse link never reaches the worker: it only opens
+ * a page, which `onBrowse` hands to the browser screen.
  */
-export function listenForAppLinks(openLink: (url: string) => Promise<PointsLinkOutcome>, onGate: () => void): void {
+export function listenForAppLinks(
+  openLink: (url: string) => Promise<PointsLinkOutcome>,
+  onGate: () => void,
+  onBrowse: (pageUrl: string) => void = () => {},
+): void {
   void App.addListener("appUrlOpen", ({ url }) => {
+    const page = parseBrowseLink(url);
+    if (page !== null) {
+      onBrowse(page);
+      return;
+    }
     openLink(url)
       .then((outcome) => {
         if (outcome === "gate") onGate();

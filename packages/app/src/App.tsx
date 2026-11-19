@@ -103,7 +103,8 @@ type MainSubView =
   | { kind: "lock-settings" }
   | { kind: "backup" }
   | { kind: "network-peers" }
-  | { kind: "browser"; url?: string }
+  /** `linkId` is set for a page a browse link opened, so a second link reopens the screen on its page. */
+  | { kind: "browser"; url?: string; linkId?: number }
   /** `origin` is the site whose entry to show; `returnToUrl` is the browser page to go back to. */
   | { kind: "connected-apps"; origin?: string; returnToUrl?: string }
   | { kind: "manage-tokens" }
@@ -162,6 +163,18 @@ function AppContent({ layout, runtime: runtimeProp }: AppProps) {
   useLayoutEffect(() => {
     if (subView.kind !== "home") window.scrollTo?.(0, 0);
   }, [subView.kind]);
+
+  // A browse link waits here while the wallet is locked or still loading,
+  // and opens once the main screen is up.
+  const [browseLink, setBrowseLink] = useState<{ url: string; id: number } | null>(null);
+  const browseLinkCount = useRef(0);
+  const subscribeBrowseLinks = platform.capabilities.dappBrowser ? platform.browseLinks?.subscribe : undefined;
+  useEffect(() => subscribeBrowseLinks?.((url) => setBrowseLink({ url, id: ++browseLinkCount.current })), [subscribeBrowseLinks]);
+  useEffect(() => {
+    if (browseLink === null || view !== "main-screen") return;
+    setSubView({ kind: "browser", url: browseLink.url, linkId: browseLink.id });
+    setBrowseLink(null);
+  }, [browseLink, view]);
 
   const [notice, setNotice] = useState<string | null>(null);
   const subscribeNotices = platform.notices?.subscribe;
@@ -452,6 +465,7 @@ function AppContent({ layout, runtime: runtimeProp }: AppProps) {
   } else if (subView.kind === "browser") {
     content = (
       <BrowserView
+        key={subView.linkId}
         runtime={runtime}
         initialUrl={subView.url}
         onBack={() => setSubView({ kind: "home" })}

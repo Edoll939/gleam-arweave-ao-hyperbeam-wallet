@@ -34,6 +34,16 @@ describe("encodeProviderResult", () => {
 });
 
 describe("readBytes", () => {
+  it("refuses more bytes than any request can hold, in every form", () => {
+    const limit = 2 * 1024 * 1024;
+    expect(readBytes(new Uint8Array(limit), "data")).toHaveLength(limit);
+    expect(() => readBytes(new Uint8Array(limit + 1), "data")).toThrow(/too large/);
+    expect(() => readBytes(new ArrayBuffer(limit + 1), "data")).toThrow(/too large/);
+    expect(() => readBytes("a".repeat(limit + 1), "data", "utf8")).toThrow(/too large/);
+    expect(() => readBytes("é".repeat(limit / 2 + 1), "data", "utf8")).toThrow(/too large/);
+    expect(() => readBytes("A".repeat(limit + 1), "signature", "base64url")).toThrow(/too large/);
+  });
+
   it("accepts strings only in the requested encoding", () => {
     expect(new TextDecoder().decode(readBytes("hé", "data", "utf8"))).toBe("hé");
     expect(Array.from(readBytes("-_8", "signature", "base64url"))).toEqual([251, 255]);

@@ -536,5 +536,11 @@ describe("key-session", () => {
       expect(isSessionExpired(Date.now() - 60 * 1000, "immediate")).toBe(false);
       expect(isSessionExpired(Date.now() - (60 * 1000 + 1), "immediate")).toBe(true);
     });
+
+    it("expires when the clock is set back past the last activity", () => {
+      expect(isSessionExpired(Date.now() + 2 * 60 * 60 * 1000, "1hr")).toBe(true);
+      expect(isSessionExpired(Date.now() + 60 * 1000, "1hr")).toBe(false);
+      expect(isSessionExpired(Date.now() + 2 * 60 * 60 * 1000, "never")).toBe(false);
+    });
   });
 });

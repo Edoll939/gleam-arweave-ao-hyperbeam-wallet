@@ -53,16 +53,23 @@ report answers three questions, and the answers set the severity.
    - `none`: nothing.
    - `one-click`: one approval of a prompt that doesn't look wrong.
    - `unusual`: an action or setting few users have, or a condition the
-     attacker doesn't control, such as a race or a browser restart. The
-     shape of a request is not unusual: a malicious site sends any shape
-     it likes.
+     attacker doesn't control, such as a browser restart. The shape of a
+     request is not unusual: a malicious site sends any shape it likes.
+   - `rare`: a coincidence at one moment that the attacker can neither
+     cause nor retry, such as the worker stopping or a storage write
+     failing between two steps, or a clock set by hand. If the attacker
+     can repeat the attempt until the timing works, it is not rare.
 
-| Loss | Requires none | one-click | unusual |
-| --- | --- | --- | --- |
-| `key`, `unapproved` | Critical | High | Medium |
-| `mismatch`, `control` | High | High | Medium |
-| `disclosure`, `lockout` | Medium | Medium | Low |
-| `none` | Low | Low | Low |
+| Loss | Requires none | one-click | unusual | rare |
+| --- | --- | --- | --- | --- |
+| `key` | Critical | High | Medium | Medium |
+| `unapproved` | Critical | High | Medium | Low |
+| `mismatch`, `control` | High | High | Medium | Low |
+| `disclosure`, `lockout` | Medium | Medium | Low | Low |
+| `none` | Low | Low | Low | Low |
+
+Severity weighs how bad the loss is against how often it can happen. A
+leaked key can't be undone, so even a rare path to one earns Medium.
 
 Only Medium and above earns a share of the bounty pool
 ([SCANS.md § Points](SCANS.md#points)). A docs mismatch, missing

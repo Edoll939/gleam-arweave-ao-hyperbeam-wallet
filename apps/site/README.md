@@ -13,8 +13,9 @@ finished scan to the wallet so the user can sign it.
 
 - **`index.html`, `privacy.html`, `terms.html`, `security.html`**: the
   main pages of the site.
-- **`android.html`, `ios.html`**: how to install the Android (APK) and
-  iPhone (TestFlight) betas, behind the `/android` and `/ios` redirects.
+- **`download.html`, `download.js`**: every download link (Chrome Web
+  Store, TestFlight, APK), with this device's first. `/android` and `/ios`
+  redirect here.
 - **`welcome.html`, `goodbye.html`, `feedback.html`**: the pages people
   see around installing and uninstalling the extension.
 - **`points.html`, `invite.html`, `program.*`**: Gleam Points and

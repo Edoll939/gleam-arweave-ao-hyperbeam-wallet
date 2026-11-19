@@ -5,7 +5,8 @@
         "appIDs": ["2GYJRK444L.app.gleamwallet"],
         "components": [
           { "/": "/invite", "?": { "code": "?*" } },
-          { "/": "/attest" }
+          { "/": "/attest" },
+          { "/": "/browse", "?": { "url": "?*" } }
         ]
       }
     ]

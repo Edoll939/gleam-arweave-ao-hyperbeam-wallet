@@ -9,7 +9,7 @@ const SITES = [
 
 describe("BUILT_IN_SITES", () => {
   it("lists the built-in dApps in alphabetical order, ignoring www.", () => {
-    expect(BUILT_IN_SITES).toEqual(["https://ao.arweave.net/", "https://bazar.arweave.net/", "https://www.permatell.xyz/"]);
+    expect(BUILT_IN_SITES).toEqual(["https://ao.arweave.net/", "https://bazar.arweave.net/", "https://iwashere.ar.io/", "https://www.permatell.xyz/"]);
   });
 });
 

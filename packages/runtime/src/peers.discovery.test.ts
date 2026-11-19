@@ -166,7 +166,7 @@ describe("refreshDiscoveredPeersIfDue", () => {
     expect(await readL1NodeUrls(storage)).toEqual([...L1_TOKEN_NODE_URLS, "https://ok.test"]);
   });
 
-  it("skips L1 nodes the user removed or turned off, and falls back to the shipped nodes when none are left", async () => {
+  it("skips L1 nodes the user removed or turned off, even when none are left", async () => {
     const storage = createFakeStorage();
     const [shipped, ...otherShipped] = L1_TOKEN_NODE_URLS;
     await storage.set(DISCOVERED_PEERS_KEY, {
@@ -188,7 +188,16 @@ describe("refreshDiscoveredPeersIfDue", () => {
     expect(await readL1NodeUrls(storage)).toEqual([...otherShipped, "https://kept.test"]);
 
     await storage.set(DISMISSED_PEERS_KEY, ["https://removed.test", "https://kept.test", ...otherShipped]);
-    expect(await readL1NodeUrls(storage)).toEqual([...L1_TOKEN_NODE_URLS]);
+    expect(await readL1NodeUrls(storage)).toEqual([]);
+  });
+
+  it("falls back to the shipped nodes the user kept when the probe found every node down", async () => {
+    const storage = createFakeStorage();
+    const [shipped, ...otherShipped] = L1_TOKEN_NODE_URLS;
+    await storage.set(DISCOVERED_PEERS_KEY, { at: 0, urls: [], l1Urls: [], l1Down: [...L1_TOKEN_NODE_URLS] });
+    await storage.set("local:networkSettings", { ...SETTINGS, peers: [{ url: shipped!, enabled: false }] });
+
+    expect(await readL1NodeUrls(storage)).toEqual(otherShipped);
   });
 
   it("keeps the old list when discovery finds nothing", async () => {

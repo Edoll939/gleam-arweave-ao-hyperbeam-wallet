@@ -153,6 +153,8 @@ export function isValidSession(value: unknown): value is Session {
   );
 }
 
+const CLOCK_SLACK_MS = 5 * 60_000;
+
 /**
  * Auto-lock is judged against the persisted `Session.lastActivityAt`
  * rather than an in-memory timer, which an MV3 service worker restart
@@ -161,11 +163,15 @@ export function isValidSession(value: unknown): value is Session {
  * minute. `"immediate"` locks one minute after the last activity rather
  * than at 0ms — a literal 0ms timeout would lock the wallet the moment
  * it's unlocked, before anything can ever sign with it.
+ *
+ * A clock set back past the last activity would otherwise read as no time
+ * passing, so it locks too; the slack absorbs a network time correction.
  */
 export function isSessionExpired(lastActivityAt: number, autoLockTimeout: AutoLockTimeout): boolean {
   const timeoutMs = AUTO_LOCK_TIMEOUT_MS[autoLockTimeout];
   if (timeoutMs === null) return false;
-  return Date.now() - lastActivityAt > timeoutMs;
+  const elapsed = Date.now() - lastActivityAt;
+  return elapsed > timeoutMs || elapsed < -CLOCK_SLACK_MS;
 }
 
 export interface KeySessionDeps {

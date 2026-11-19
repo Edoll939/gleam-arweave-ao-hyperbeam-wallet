@@ -24,6 +24,26 @@ describe("listenForAppLinks", () => {
     expect(openLink).toHaveBeenCalledExactlyOnceWith("https://open.gleamwallet.app/invite?code=GLEAM42&x=%00");
   });
 
+  it("sends a browse link to the browser screen, not the worker", () => {
+    const openLink = vi.fn(async (): Promise<PointsLinkOutcome> => "dropped");
+    const onBrowse = vi.fn();
+    listenForAppLinks(openLink, vi.fn(), onBrowse);
+
+    listeners.get("appUrlOpen")!({ url: "https://open.gleamwallet.app/browse?url=https%3A%2F%2Fiwashere.ar.io%2F" });
+    expect(onBrowse).toHaveBeenCalledExactlyOnceWith("https://iwashere.ar.io/");
+    expect(openLink).not.toHaveBeenCalled();
+  });
+
+  it("gives a malformed browse link to the worker, which drops it", () => {
+    const openLink = vi.fn(async (): Promise<PointsLinkOutcome> => "dropped");
+    const onBrowse = vi.fn();
+    listenForAppLinks(openLink, vi.fn(), onBrowse);
+
+    listeners.get("appUrlOpen")!({ url: "https://open.gleamwallet.app/browse?url=javascript%3Aalert(1)" });
+    expect(onBrowse).not.toHaveBeenCalled();
+    expect(openLink).toHaveBeenCalledOnce();
+  });
+
   it.each<[PointsLinkOutcome, number]>([
     ["gate", 1],
     ["invite", 0],

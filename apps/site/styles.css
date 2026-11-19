@@ -630,6 +630,8 @@ code { font-family: var(--mono); font-size: 0.9em; }
 
 .page .links a { text-underline-offset: 3px; }
 
+.cta[hidden], .page .links [hidden] { display: none; }
+
 .form { margin-top: 40px; display: flex; flex-direction: column; gap: 22px; }
 
 .field { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0; }

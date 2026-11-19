@@ -5,7 +5,7 @@ import { readText, showAtCommit, type Deps, type Problem } from "./shared.ts";
 /** SECURITY.md § Severity, question 2. */
 export const LOSSES = ["key", "unapproved", "mismatch", "control", "disclosure", "lockout", "none"] as const;
 /** SECURITY.md § Severity, question 3. */
-export const REQUIRES = ["none", "one-click", "unusual"] as const;
+export const REQUIRES = ["none", "one-click", "unusual", "rare"] as const;
 /** Only these earn, so only these are filed (SCANS.md § Points). */
 export const FILED = ["medium", "high", "critical"] as const;
 
@@ -18,6 +18,7 @@ const RANK: Record<Level, number> = { low: 0, medium: 1, high: 2, critical: 3 };
 /** The SECURITY.md § Severity table. */
 export function rubricSeverity(loss: Loss, requires: Requires): Level {
   if (loss === "none") return "low";
+  if (requires === "rare") return loss === "key" ? "medium" : "low";
   if (requires === "unusual") return loss === "disclosure" || loss === "lockout" ? "low" : "medium";
   if (loss === "disclosure" || loss === "lockout") return "medium";
   if (loss === "key" || loss === "unapproved") return requires === "none" ? "critical" : "high";

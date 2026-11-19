@@ -124,7 +124,7 @@ Verdict: holds | holds, weaker | needs a browser check | refuted
 Severity: critical | high | medium | low | none
 Attacker: <a row of docs/THREAT_MODEL.md § Attackers>
 Loss: key | unapproved | mismatch | control | disclosure | lockout | none
-Requires: none | one-click | unusual
+Requires: none | one-click | unusual | rare
 Fix location: <file>#<function a fix has to change>
 Evidence: demonstrated | traced | needs a browser check: <the exact fact>
 Reason: <one to three sentences: what you checked, and what settled it>

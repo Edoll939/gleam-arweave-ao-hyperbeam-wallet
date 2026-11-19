@@ -576,6 +576,14 @@ export function createRuntime(platform: Platform): Runtime {
     }
   }
 
+  /**
+   * A screen opened before auto-lock can outlive it, so methods that change
+   * the vault, its settings or a site's access check the lock themselves.
+   */
+  async function requireUnlocked(): Promise<void> {
+    if (await keySession.isVaultLocked()) throw new Error(userErrorMessage("keyringLocked"));
+  }
+
   /** The work behind each `BACKGROUND_MESSAGES` entry, run once its sender has been checked. */
   const MESSAGE_HANDLERS: MessageHandlers = {
     // wallet lifecycle
@@ -584,6 +592,7 @@ export function createRuntime(platform: Platform): Runtime {
     addHardwareWallet: (data) => addWallet(() => lifecycle.addHardwareWallet(data)),
     addWatchWallet: (data) => addWallet(() => lifecycle.addWatchWallet(data)),
     deleteWallet: async (data) => {
+      await requireUnlocked();
       const { walletId } = data;
       const before = await lifecycle.getState();
       const isLastWallet = before.wallets.every((candidate) => candidate.id === walletId);
@@ -631,8 +640,14 @@ export function createRuntime(platform: Platform): Runtime {
     getBackupStatus: () => backup.status(),
     setUpBackup: (data) => backup.setUp(data),
     syncBackupNow: () => backup.syncNow(),
-    stopBackupSync: () => backup.stopSyncing(),
-    deleteBackup: () => backup.deleteBackup(),
+    stopBackupSync: async () => {
+      await requireUnlocked();
+      return backup.stopSyncing();
+    },
+    deleteBackup: async () => {
+      await requireUnlocked();
+      return backup.deleteBackup();
+    },
     findBackup: () => backup.find(),
     restoreBackup: async (data) => {
       const result = await backup.restore(data);
@@ -696,7 +711,10 @@ export function createRuntime(platform: Platform): Runtime {
     getNetworkSettings: () => reads.getNetworkSettings(),
     setNetworkSettings: (data) => saveNetworkSettings(storage, data),
     getLockSettings: () => lifecycle.getLockSettings(),
-    setLockSettings: (data) => lifecycle.setLockSettings(data),
+    setLockSettings: async (data) => {
+      await requireUnlocked();
+      return lifecycle.setLockSettings(data);
+    },
     getThemePreference: () => lifecycle.getThemePreference(),
     setThemePreference: (data) => lifecycle.setThemePreference(data),
     getDisplaySettings: () => lifecycle.getDisplaySettings(),
@@ -710,6 +728,7 @@ export function createRuntime(platform: Platform): Runtime {
     getActiveSite: async () => siteWallet.activeSite(await tabs.activeTab()),
     useGleamOnSite: async (data) => {
       const origin = requireWebOrigin(data.origin);
+      await requireUnlocked();
       await approval.grantSite({ origin, permissions: data.permissions, favIconUrl: await favIconFor(origin) });
       await siteWallet.setUseGleam(origin, true);
       await pushSiteWalletMode(origin, true);
