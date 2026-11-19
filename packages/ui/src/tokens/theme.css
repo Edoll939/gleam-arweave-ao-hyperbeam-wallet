@@ -228,8 +228,9 @@
  * lighter sheet laid on the paper, tiles and chips are pressed a step
  * darker, and the chart is neutral. Text is a warm ink, and the greys
  * lean the same way so they don't look dirty on the paper.
- * - The beam is printed: each stop a little deeper than light's, since
- *   the neon green and lemon yellow go muddy on paper.
+ * - The beam is printed ink soaked into the paper: each stop is mixed
+ *   about a fifth of the way toward the paper, so it reads as colour on
+ *   paper, not light on top of it.
  * - Warning, gains and losses are deeper too, to keep contrast on the
  *   darker ground.
  */
@@ -250,11 +251,11 @@
 
   --color-shimmer-base: #e9e7e1;
 
-  --color-beam-red: #e0362c;
-  --color-beam-purple: #7a2fd6;
-  --color-beam-sky: #4aa8cf;
-  --color-beam-yellow: #e9bf2e;
-  --color-beam-green: #3cb84a;
+  --color-beam-red: #e45b53;
+  --color-beam-purple: #9256db;
+  --color-beam-sky: #6cb7d5;
+  --color-beam-yellow: #ebc954;
+  --color-beam-green: #60c36b;
 
   --color-chart-up: var(--color-foreground);
   --color-chart-down: var(--color-foreground);
