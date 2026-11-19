@@ -10,7 +10,7 @@ import {
 } from "@gleam/core/src/scan/index.ts";
 import type { Queryable } from "./db";
 import { GithubUnavailableError, type GithubClient } from "./github";
-import { areaSummaries, byLeastCovered, canChallenge, examinedFunctions, functionKey } from "./scan-areas";
+import { areaSummaries, byLeastCovered, canChallenge, functionKey, functionLooks } from "./scan-areas";
 import { GITHUB_UNAVAILABLE, NO_RELEASE, failure, type ScanFailure } from "./scan-errors";
 import { openRelease } from "./scan-places";
 
@@ -37,7 +37,9 @@ export function parseChallengeQuery(query: { area?: string }): { area: ScanAreaI
 
 /**
  * Draws a challenge from one area's functions, the first of them from those
- * no scan has examined in their current text. Without an area it takes the
+ * the fewest scans have examined in their current text: the unexamined while
+ * there are any, then the least looked at, so repeat scans of unchanged code
+ * go round the whole area. Without an area it takes the
  * least covered one (ties go to the lower tier), among areas with enough
  * functions to challenge. The release's first challenge fixes its paid
  * places.
@@ -80,9 +82,14 @@ export async function issueChallenge(
     }
 
     const pool = functions.filter((fn) => fn.area === area);
-    const examined = await examinedFunctions(db, latest.release, pool);
-    const unexamined = pool.filter((fn) => !examined.has(functionKey(fn)));
-    const picked = await pickChallenge(pool, randomBytes(32), unexamined);
+    const looks = await functionLooks(db, latest.release, pool);
+    const looksAt = (fn: { file: string; symbol: string }) => looks.get(functionKey(fn)) ?? 0;
+    const fewest = Math.min(...pool.map(looksAt));
+    const picked = await pickChallenge(
+      pool,
+      randomBytes(32),
+      pool.filter((fn) => looksAt(fn) === fewest),
+    );
     const id = randomBytes(24).toString("base64url");
     const expiresAt = new Date(now.getTime() + CHALLENGE_TTL_MS);
     await db.query(

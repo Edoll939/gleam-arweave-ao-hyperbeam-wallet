@@ -90,8 +90,10 @@ atomic integer).
 
 `GET /scan/challenge` without `area` picks the area with the smallest
 share of its functions examined, the lower tier on a tie. It draws the
-3 functions from that area only, and from the unexamined ones while
-there are any.
+3 functions from that area only. The first comes from the functions the
+fewest scans have examined: the unexamined while there are any, then the
+least looked at, so repeat scans of unchanged code go round the whole
+area.
 
 **Coverage carries across releases.** The server keeps a SHA-256 of
 each answered function's text at the attestation's commit. A function

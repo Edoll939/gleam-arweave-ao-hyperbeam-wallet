@@ -29,23 +29,44 @@ export async function answeredFunctions(db: Queryable, release: string): Promise
 }
 
 /**
- * The `functionKey`s of the release's functions a non-voided scan has
- * examined: answered on this release, or on any release where the function's
- * text was the same. The first covers scans recorded before fingerprints.
+ * How many non-voided scans examined each of the release's functions in its
+ * current text, by `functionKey`: answered on this release, or on any release
+ * where the function's text was the same. The first covers scans recorded
+ * before fingerprints. A function no scan examined is left out.
  */
-export async function examinedFunctions(db: Queryable, release: string, functions: readonly ReleaseFunction[]): Promise<Set<string>> {
+export async function functionLooks(db: Queryable, release: string, functions: readonly ReleaseFunction[]): Promise<Map<string, number>> {
   const files = [...new Set(functions.map((fn) => fn.file))];
   const [answered, printed] = await Promise.all([
-    answeredFunctions(db, release),
-    db.query<{ file: string; symbol: string; fingerprint: string }>(
-      `SELECT DISTINCT e.file, e.symbol, e.fingerprint
+    db.query<{ id: string; file: string; symbol: string }>(
+      `SELECT DISTINCT id, a->>'file' AS file, a->>'symbol' AS symbol
+         FROM attestations, jsonb_array_elements(body->'answers') a
+        WHERE release = $1 AND voided_at IS NULL`,
+      [release],
+    ),
+    db.query<{ id: string; file: string; symbol: string; fingerprint: string }>(
+      `SELECT e.attestation_id AS id, e.file, e.symbol, e.fingerprint
          FROM examined_functions e JOIN attestations a ON a.id = e.attestation_id
         WHERE a.voided_at IS NULL AND e.file = ANY($1::text[])`,
       [files],
     ),
   ]);
-  const seen = new Set(printed.rows.map(fingerprintKey));
-  return new Set(functions.filter((fn) => answered.has(functionKey(fn)) || seen.has(fingerprintKey(fn))).map(functionKey));
+  const byAnswer = new Map<string, Set<string>>();
+  const add = (map: Map<string, Set<string>>, key: string, id: string) => map.set(key, (map.get(key) ?? new Set()).add(id));
+  for (const row of answered.rows) add(byAnswer, functionKey(row), row.id);
+  const byPrint = new Map<string, Set<string>>();
+  for (const row of printed.rows) add(byPrint, fingerprintKey(row), row.id);
+
+  const looks = new Map<string, number>();
+  for (const fn of functions) {
+    const ids = new Set([...(byAnswer.get(functionKey(fn)) ?? []), ...(byPrint.get(fingerprintKey(fn)) ?? [])]);
+    if (ids.size > 0) looks.set(functionKey(fn), ids.size);
+  }
+  return looks;
+}
+
+/** The `functionKey`s of the release's functions a non-voided scan has examined in their current text. */
+export async function examinedFunctions(db: Queryable, release: string, functions: readonly ReleaseFunction[]): Promise<Set<string>> {
+  return new Set((await functionLooks(db, release, functions)).keys());
 }
 
 const fingerprintKey = (fn: { file: string; symbol: string; fingerprint: string }) => `${functionKey(fn)}\n${fn.fingerprint}`;

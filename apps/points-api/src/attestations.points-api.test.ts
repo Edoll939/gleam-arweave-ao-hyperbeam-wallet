@@ -1276,6 +1276,26 @@ describe("scan areas and rounds", () => {
       for (let i = 0; i < 5; i++) expect((await s.challenge("keys")).functions[0]).toEqual({ file: "src/k.ts", symbol: "guardK2" });
     });
 
+    it("once all are examined, draws the first function from the least looked at", async () => {
+      const s = await areas();
+      await recordScan(s.db, 1, "keys", [
+        { file: "src/a.ts", symbol: "guardA1" },
+        { file: "src/a.ts", symbol: "guardA2" },
+        { file: "src/k.ts", symbol: "guardK1" },
+      ]);
+      await recordScan(s.db, 2, "keys", [
+        { file: "src/a.ts", symbol: "guardA1" },
+        { file: "src/a.ts", symbol: "guardA2" },
+        { file: "src/k.ts", symbol: "guardK2" },
+      ]);
+      // A voided scan's look doesn't count.
+      await recordScan(s.db, 3, "keys", [{ file: "src/k.ts", symbol: "guardK1" }], true);
+      for (let i = 0; i < 5; i++) {
+        const first = (await s.challenge("keys")).functions[0]!;
+        expect(first.file).toBe("src/k.ts");
+      }
+    });
+
     it("400 malformed_request for an unknown area", async () => {
       const s = await areas();
       const { status, json } = await s.get("/scan/challenge?area=everything");
