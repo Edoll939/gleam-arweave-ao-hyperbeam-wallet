@@ -92,6 +92,12 @@ describe("resolveInput", () => {
 });
 
 describe("pageTrail", () => {
+  it("keeps an ID's ends when asked, for a typed address", () => {
+    const url = "https://www.permatell.xyz/pomp/claim/o4nLGqCnCei5ncVkQhospY_5BKxNEhn_iLFTslICVro";
+    expect(pageTrail(url)).toEqual(["pomp", "claim", "…"]);
+    expect(pageTrail(url, { idEnds: true })).toEqual(["pomp", "claim", "o4nL…CVro"]);
+  });
+
   it("is empty on a site's home page", () => {
     expect(pageTrail("https://ao.arweave.net/")).toEqual([]);
     expect(pageTrail("https://ao.arweave.net/?ref=x")).toEqual([]);
