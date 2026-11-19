@@ -18,6 +18,29 @@ gh api "$API/<GHSA>/comments"   # reporters often post the attestation id here
 
 Also list `state=draft` for accepted reports that are not yet published.
 
+## Acting as the bot
+
+Closing and dock comments, and state changes on reports, go out as the
+`gleam-triage` GitHub App, not as Will. Reads and everything else use
+Will's `gh`.
+
+```bash
+BOT=$(cat ~/.secrets/gleam-triage/token)   # then: GH_TOKEN=$BOT gh api …
+```
+
+The token lasts one hour and only Will can mint it (`scripts/bot-token.sh`
+asks for his KeePassXC password). Before the first bot call, check
+`find ~/.secrets/gleam-triage/token -mmin -50`. If it prints nothing, stop
+and ask Will to run
+`(umask 077; scripts/bot-token.sh > ~/.secrets/gleam-triage/token)`. A 401
+from a bot call means the same. Never print, log or paste the token, and
+never fall back to Will's account for a closing comment without asking.
+
+A dock comment starts with `Docked:` and gives the reason in plain
+language (see the closing-comment rule). Try the comment through the bot
+first. If the advisory API has no comment endpoint for an app, say so and
+leave the comment for Will.
+
 ## 1. Triage each report
 
 First group the open reports by their Fix location section. Reports that
