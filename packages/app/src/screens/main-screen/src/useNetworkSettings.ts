@@ -7,9 +7,10 @@ import type { NetworkSettings, RuntimePort } from "@gleam/core";
  * of a hard-coded "arweave.net" label. Not address-scoped, matching
  * `useTokenPrices`.
  */
-export function useNetworkSettings(runtime: RuntimePort) {
+export function useNetworkSettings(runtime: RuntimePort, enabled = true) {
   return useQuery({
     queryKey: ["networkSettings"] as const,
     queryFn: () => runtime.send<void, NetworkSettings>({ type: "getNetworkSettings", payload: undefined }),
+    enabled,
   });
 }

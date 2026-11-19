@@ -123,6 +123,24 @@ describe("ReadsHandler: getCollectibles", () => {
     expect(list[0]).not.toHaveProperty("videoUrl");
   });
 
+  it("serves a cached Permaweb Name and rediscovers past a malformed one", async () => {
+    const fn = stubNetwork();
+    const storage = createFakeStorage();
+    const reads = new ReadsHandler(storage);
+    await reads.getCollectibles({ address: ADDRESS });
+    const key = `local:collectibles:${ADDRESS}`;
+    const cached = storage.store.get(key) as { collectibles: Array<Record<string, unknown>> };
+    const name = { id: ASSET, name: "@zy", ticker: "NAME", permawebName: { label: "zy", target: ASSET, listed: true } };
+    storage.store.set(key, { ...cached, collectibles: [name] });
+    const calls = fn.mock.calls.length;
+    await expect(reads.getCollectibles({ address: ADDRESS })).resolves.toEqual([name]);
+    expect(fn.mock.calls.length).toBe(calls);
+
+    storage.store.set(key, { ...cached, collectibles: [{ ...name, permawebName: { label: "zy", listed: "yes" } }] });
+    await reads.getCollectibles({ address: ADDRESS });
+    expect(fn.mock.calls.length).toBeGreaterThan(calls);
+  });
+
   it("shares one discovery between concurrent calls", async () => {
     const fn = stubNetwork();
     const reads = new ReadsHandler(createFakeStorage());

@@ -1,4 +1,5 @@
 import { Fragment, useState, type ReactNode } from "react";
+import { permawebNameLabel } from "@gleam/core";
 import { truncateAddress } from "@gleam/ui/src/format/truncate-address.ts";
 import { Button } from "@gleam/ui/src/primitives/button.tsx";
 import { cn } from "@gleam/ui/src/primitives/cn.ts";
@@ -214,7 +215,13 @@ function Hero({ transfer, context }: { transfer: TransferLine; context: Transfer
     const name = transfer.collectible.name ?? truncateAddress(transfer.collectible.id, 6);
     return (
       <div className={`flex flex-col items-center gap-3 pb-8 pt-8 text-center ${GUTTER}`}>
-        <CollectibleThumbnail name={name} imageUrl={transfer.collectible.imageUrl} decorative className="w-40 rounded-[14px]" />
+        <CollectibleThumbnail
+          name={name}
+          imageUrl={transfer.collectible.imageUrl}
+          nameLabel={permawebNameLabel(transfer.collectible.name)}
+          decorative
+          className="w-40 rounded-[14px]"
+        />
         <div className="flex flex-col items-center gap-0.5">
           <span className="break-words text-h3 font-semibold text-foreground"><UntrustedText text={name} /></span>
           <span className="text-label text-muted">{t("transferReview.oneItem")}</span>

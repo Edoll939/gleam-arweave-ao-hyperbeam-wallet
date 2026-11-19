@@ -6,6 +6,18 @@ import { fakeCaches } from "./image-cache.testing";
 afterEach(cleanup);
 
 describe("CollectibleThumbnail", () => {
+  it("draws a name as type and loads no media", () => {
+    const { container } = render(<CollectibleThumbnail name="@zy" nameLabel="zy" imageUrl="https://arweave.net/abc" />);
+    expect(screen.getByRole("img", { name: "@zy" }).textContent).toBe("@@zy");
+    expect(container.querySelector("img, video")).toBeNull();
+  });
+
+  it("hides a decorative name tile from assistive tech", () => {
+    const { container } = render(<CollectibleThumbnail name="@zy" nameLabel="zy" decorative />);
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(container.firstElementChild!.getAttribute("aria-hidden")).toBe("true");
+  });
+
   it("loads the image through a lazy, referrer-less <img>", () => {
     render(<CollectibleThumbnail name="Frog" imageUrl="https://arweave.net/abc" />);
     const img = screen.getByAltText("Frog");

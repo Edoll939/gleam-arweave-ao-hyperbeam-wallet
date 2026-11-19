@@ -17,6 +17,39 @@ export interface Collectible {
   collectionId?: string;
   /** The collection process's own `Name` tag, or a shortened `collectionId` when it has none. */
   collectionName?: string;
+  /**
+   * Set on a Permaweb Name (`ao/names.ts`), whose `name` is then
+   * `@<label>`. Only a name the namespace confirmed gets it, and only a
+   * name starts with `@`: discovery strips it from every other asset.
+   */
+  permawebName?: PermawebName;
+}
+
+export interface PermawebName {
+  label: string;
+  /** The id the name points to. */
+  target?: string;
+  /** Escrowed into an open sale order, so it can't be sent. */
+  listed?: true;
+}
+
+/** A single DNS label, so the name can be opened as a gateway subdomain. */
+const DNS_LABEL = /^[a-z0-9_-]{1,63}$/;
+
+/** `https://<label>.<gateway host>`, where the gateway serves the name's target; undefined when the label can't be a subdomain. */
+export function nameSiteUrl(label: string, gatewayUrl: string): string | undefined {
+  if (!DNS_LABEL.test(label)) return undefined;
+  try {
+    const gateway = new URL(gatewayUrl);
+    return `${gateway.protocol}//${label}.${gateway.host}`;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The label of a collectible or ref named `@<label>`: only Permaweb Names are. */
+export function permawebNameLabel(name: string | undefined): string | undefined {
+  return name !== undefined && name.startsWith("@") && name.length > 1 ? name.slice(1) : undefined;
 }
 
 export type CollectibleKind = "image" | "video" | "audio" | "web" | "document" | "file";

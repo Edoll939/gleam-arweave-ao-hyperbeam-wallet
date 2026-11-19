@@ -136,6 +136,7 @@ export function CollectiblesGallery({ items, loading, onOpen }: CollectiblesGall
                 imageUrl={item.imageUrl}
                 videoUrl={item.videoUrl}
                 kind={collectibleKind(item.contentType)}
+                nameLabel={item.permawebName?.label}
                 decorative
               />
             </button>
@@ -180,6 +181,7 @@ export function CollectiblesGallery({ items, loading, onOpen }: CollectiblesGall
           play
           kind={collectibleKind(shown.contentType)}
           kindLabel={collectibleKindLabel(t, shown.contentType)}
+          nameLabel={shown.permawebName?.label}
           decorative
           className="rounded-2xl"
         />

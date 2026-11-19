@@ -146,7 +146,12 @@ export function SendCollectibleView({ runtime, wallet, collectible, onBack, onDo
         <ScreenHeader title={t("send.sendCollectible")} onBack={onBack} />
         <div className="flex flex-1 flex-col gap-6 px-5 py-5 phone:pb-0">
           <div className="flex items-center gap-3">
-            <CollectibleThumbnail name={collectible.name} imageUrl={collectible.imageUrl} className="w-12 flex-shrink-0 rounded-md" />
+            <CollectibleThumbnail
+              name={collectible.name}
+              imageUrl={collectible.imageUrl}
+              nameLabel={collectible.permawebName?.label}
+              className="w-12 flex-shrink-0 rounded-md"
+            />
             <div className="flex min-w-0 flex-col">
               <span className="truncate text-label font-semibold text-foreground">{collectible.name}</span>
               <span className="text-caption text-muted">{t("send.fromWallet", { name: wallet.name })}</span>

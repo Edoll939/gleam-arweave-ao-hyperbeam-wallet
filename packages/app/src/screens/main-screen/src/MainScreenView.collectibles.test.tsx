@@ -217,4 +217,36 @@ describe("CollectibleDetailView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
     expect(onSend).toHaveBeenCalledWith(DOC);
   });
+  const NAME: Collectible = {
+    id: "N".repeat(43),
+    name: "@zy",
+    ticker: "NAME",
+    permawebName: { label: "zy", target: "T".repeat(43) },
+  };
+
+  it("shows a name as type, with what it points to and a link to its site", () => {
+    render(<CollectibleDetailView collectible={NAME} gatewayUrl="https://arweave.net" onBack={vi.fn()} onSend={vi.fn()} />);
+    expect(screen.getByRole("heading", { name: "@zy" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "@zy" }).textContent).toContain("@zy");
+    expect(screen.getByText("Name")).toBeTruthy();
+    expect(screen.getByText("Points to")).toBeTruthy();
+    expect(screen.getByText("T".repeat(43))).toBeTruthy();
+    expect(screen.getByRole("link", { name: "zy.arweave.net" }).getAttribute("href")).toBe("https://zy.arweave.net");
+    expect(screen.getByRole("link", { name: "View on Lunar" }).getAttribute("href")).toBe(`https://lunar.arweave.net/#/explorer/${"T".repeat(43)}`);
+    expect(screen.getByRole("button", { name: "Send" })).toBeTruthy();
+  });
+
+  it("links a name to Lunar until the gateway is known", () => {
+    render(<CollectibleDetailView collectible={NAME} onBack={vi.fn()} />);
+    expect(screen.queryByRole("link", { name: "zy.arweave.net" })).toBeNull();
+    expect(screen.getAllByRole("link", { name: "View on Lunar" })[0]!.getAttribute("href")).toBe(`https://lunar.arweave.net/#/explorer/${NAME.id}/data`);
+  });
+
+  it("marks a listed name and offers no Send", () => {
+    const listed = { ...NAME, permawebName: { label: "zy", listed: true as const } };
+    render(<CollectibleDetailView collectible={listed} gatewayUrl="https://arweave.net" onBack={vi.fn()} onSend={vi.fn()} />);
+    expect(screen.getByText("Name · Listed for sale")).toBeTruthy();
+    expect(screen.queryByText("Points to")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
+  });
 });

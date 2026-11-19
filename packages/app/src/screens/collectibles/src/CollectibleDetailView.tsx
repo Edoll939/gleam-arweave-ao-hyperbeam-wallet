@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { collectibleKind, type Collectible } from "@gleam/core";
+import { collectibleKind, explorerUrlFor, nameSiteUrl, type Collectible } from "@gleam/core";
 import { CollectibleThumbnail } from "@gleam/ui/src/components/wallet/index.ts";
 import { useT } from "../../../i18n";
 import { collectibleKindLabel } from "./CollectiblesGallery";
@@ -9,13 +9,20 @@ import { ScreenFooter } from "@gleam/ui/src/primitives/screen-footer.tsx";
 
 export interface CollectibleDetailViewProps {
   collectible: Collectible;
+  /** Opens a Permaweb Name's own site; without it the name links to Lunar like any collectible. */
+  gatewayUrl?: string;
   onBack: () => void;
   /** The Send button only renders when this is provided. */
   onSend?: (collectible: Collectible) => void;
 }
 
-export function CollectibleDetailView({ collectible, onBack, onSend }: CollectibleDetailViewProps) {
+export function CollectibleDetailView({ collectible, gatewayUrl, onBack, onSend }: CollectibleDetailViewProps) {
   const t = useT();
+  const name = collectible.permawebName;
+  const siteUrl = name && gatewayUrl ? nameSiteUrl(name.label, gatewayUrl) : undefined;
+  const subtitle = name ? (name.listed ? `${t("collectibles.name")} · ${t("collectibles.listedForSale")}` : t("collectibles.name")) : collectible.collectionName;
+  // An escrowed name isn't the wallet's to send until its sale order closes.
+  const send = name?.listed ? undefined : onSend;
   return (
     <div className="flex min-h-full flex-col">
       <ScreenHeader title={t("collectibles.detailTitle")} onBack={onBack} />
@@ -28,6 +35,7 @@ export function CollectibleDetailView({ collectible, onBack, onSend }: Collectib
           play
           kind={collectibleKind(collectible.contentType)}
           kindLabel={collectibleKindLabel(t, collectible.contentType)}
+          nameLabel={name?.label}
           className="rounded-2xl"
         />
 
@@ -36,25 +44,35 @@ export function CollectibleDetailView({ collectible, onBack, onSend }: Collectib
             <h2 className="inline" title={collectible.name}>
               {collectible.name}
             </h2>
-            <a
-              href={`https://lunar.arweave.net/#/explorer/${encodeURIComponent(collectible.id)}/data`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={t("collectibles.viewOnLunar")}
-              title={t("collectibles.viewOnLunar")}
-              className="ml-1.5 inline-flex h-7 w-7 items-center justify-center rounded-md align-middle text-muted hover:bg-mist hover:text-foreground"
-            >
-              <ExternalLinkIcon />
-            </a>
+            {siteUrl ? (
+              <ExternalLink href={siteUrl} label={new URL(siteUrl).host} />
+            ) : (
+              <ExternalLink
+                href={`https://lunar.arweave.net/#/explorer/${encodeURIComponent(collectible.id)}/data`}
+                label={t("collectibles.viewOnLunar")}
+              />
+            )}
           </div>
-          {collectible.collectionName ? <p className="text-label text-muted">{collectible.collectionName}</p> : null}
+          {subtitle ? <p className="text-label text-muted">{subtitle}</p> : null}
         </div>
+
+        {name?.target ? (
+          <div className="flex flex-col gap-1">
+            <span className="text-label text-muted">{t("collectibles.pointsTo")}</span>
+            <div className="flex items-center gap-1">
+              <span dir="ltr" className="min-w-0 flex-1 break-all font-mono text-caption leading-relaxed text-foreground">
+                {name.target}
+              </span>
+              <ExternalLink href={explorerUrlFor(name.target)} label={t("collectibles.viewOnLunar")} />
+            </div>
+          </div>
+        ) : null}
 
         {collectible.description ? <CollectibleDescription key={collectible.id} text={collectible.description} /> : null}
 
-        {onSend ? (
+        {send ? (
           <ScreenFooter className="gap-0 pt-2">
-            <Button onClick={() => onSend(collectible)}>{t("collectibles.send")}</Button>
+            <Button onClick={() => send(collectible)}>{t("collectibles.send")}</Button>
           </ScreenFooter>
         ) : null}
       </div>
@@ -90,6 +108,21 @@ function CollectibleDescription({ text }: { text: string }) {
         </button>
       ) : null}
     </div>
+  );
+}
+
+function ExternalLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      title={label}
+      className="ml-1.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md align-middle text-muted hover:bg-mist hover:text-foreground"
+    >
+      <ExternalLinkIcon />
+    </a>
   );
 }
 
