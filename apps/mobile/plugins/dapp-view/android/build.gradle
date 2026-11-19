@@ -7,6 +7,7 @@ ext {
     // androidx.webkit. 1.14.0 has the multi-profile, document-start script
     // and web message listener APIs this module needs.
     androidxWebkitVersion = project.hasProperty('androidxWebkitVersion') ? rootProject.ext.androidxWebkitVersion : '1.14.0'
+    androidxSwipeRefreshLayoutVersion = project.hasProperty('androidxSwipeRefreshLayoutVersion') ? rootProject.ext.androidxSwipeRefreshLayoutVersion : '1.1.0'
 }
 
 buildscript {
@@ -57,4 +58,5 @@ dependencies {
     implementation project(':capacitor-android')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.webkit:webkit:$androidxWebkitVersion"
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:$androidxSwipeRefreshLayoutVersion"
 }
