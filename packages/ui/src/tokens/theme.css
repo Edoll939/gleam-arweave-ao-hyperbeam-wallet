@@ -231,9 +231,9 @@
  * lighter sheet laid on the paper, tiles and chips are pressed a step
  * darker, and the chart is neutral. Text is a warm ink, and the greys
  * lean the same way so they don't look dirty on the paper.
- * - The beam is light falling on the paper, not ink: clear spectral
- *   stops with a soft spill of the same colours onto the sheet
- *   (`.gleam-beam-divider` below), like a prism's spectrum on a card.
+ * - The beam is light falling flat on the paper, not ink and not a raised
+ *   bar: clear spectral stops mixed about a third of the way toward the
+ *   paper, with no glow, so it sits in the pressed header.
  * - Charts are a bare line with no shading under it, its gain or loss
  *   colour softened the same way as the beam.
  * - Warning, gains and losses are deeper too, to keep contrast on the
@@ -256,11 +256,11 @@
 
   --color-shimmer-base: #e8e6e3;
 
-  --color-beam-red: #ea5049;
-  --color-beam-purple: #8e45e4;
-  --color-beam-sky: #63bbdc;
-  --color-beam-yellow: #f0cf4b;
-  --color-beam-green: #4ac95b;
+  --color-beam-red: #f0716a;
+  --color-beam-purple: #a967ef;
+  --color-beam-sky: #86cee7;
+  --color-beam-yellow: #f4dd71;
+  --color-beam-green: #6dd979;
 
   --color-chart-up: var(--color-foreground);
   --color-chart-down: var(--color-foreground);
@@ -549,26 +549,9 @@ select,
   );
 }
 
-/*
- * On paper the beam spills its colours onto the sheet just below it, as
- * light does. In a layer so a beam that is already `absolute` stays so.
- */
-@layer components {
-  [data-theme="paper"] .gleam-beam-divider {
-    position: relative;
-  }
-}
-
-[data-theme="paper"] .gleam-beam-divider::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: inherit;
-  filter: blur(2px);
-  opacity: 0.2;
-  transform: translateY(1.5px);
-  pointer-events: none;
+/* Paper's beam is a thinner line, so it lies in the header rather than on it. */
+[data-theme="paper"] .gleam-beam-divider {
+  height: 2px;
 }
 
 /*
@@ -578,10 +561,10 @@ select,
  */
 @keyframes gleam-beam-draw {
   from {
-    clip-path: inset(-8px 100% -8px -8px);
+    clip-path: inset(0 100% 0 0);
   }
   to {
-    clip-path: inset(-8px);
+    clip-path: inset(0 0 0 0);
   }
 }
 
