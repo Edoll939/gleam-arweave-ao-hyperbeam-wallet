@@ -205,7 +205,7 @@ describe("SendView token picker (AO-SEND-UI-WALLET-CORE)", () => {
 
     await waitFor(() => expect(screen.getAllByText("ARDRIVE").length).toBeGreaterThan(0));
 
-    const dialog = screen.getByRole("dialog", { name: "Select token" });
+    const dialog = screen.getByRole("dialog", { name: "Select a token" });
     const rowNames = within(dialog)
       .getAllByRole("button")
       .filter((row) => row.getAttribute("aria-label") !== "Back")

@@ -13,6 +13,7 @@ import { usePlatform } from "../../../app-platform/context";
 import { addressFromQr, QrScanError } from "../../../app-platform/qr-scanner";
 import { useDisplaySettings } from "../../../display-settings";
 import { DEFAULT_AO_TOKEN, DEFAULT_AR_TOKEN } from "@gleam/ui";
+import { cn } from "@gleam/ui/src/primitives/cn.ts";
 import { truncateAddress } from "@gleam/ui/src/format/truncate-address.ts";
 import {
   AR_DENOMINATION,
@@ -1338,7 +1339,7 @@ function TokenPickerStep({
           }
           loading={loading}
           onClick={() => onSelect(null)}
-          className={selectedToken === null ? "bg-mist" : undefined}
+          className={cn("border-b-0", selectedToken === null && "bg-mist")}
         />
 
         <TokenRow
@@ -1353,7 +1354,7 @@ function TokenPickerStep({
           }
           loading={loading}
           onClick={aoBalance?.available === false ? undefined : () => onSelect(aoToken)}
-          className={selectedToken?.processId === DEFAULT_AO_TOKEN.processId ? "bg-mist" : undefined}
+          className={cn("border-b-0", selectedToken?.processId === DEFAULT_AO_TOKEN.processId && "bg-mist")}
         />
 
         {loading ? (
@@ -1373,7 +1374,7 @@ function TokenPickerStep({
                   : formatAtomicCompact(candidate.quantity, candidate.denomination)
               }
               onClick={candidate.available === false ? undefined : () => onSelect(candidate)}
-              className={selectedToken?.processId === candidate.processId ? "bg-mist" : undefined}
+              className={cn("border-b-0", selectedToken?.processId === candidate.processId && "bg-mist")}
             />
           ))
         )}
@@ -1384,7 +1385,7 @@ function TokenPickerStep({
 
 function SkeletonPickerRow() {
   return (
-    <div className="flex w-full items-center gap-2.5 border-b border-line px-3.5 py-3 last:border-b-0 phone:border-b-0 phone:px-0">
+    <div className="flex w-full items-center gap-2.5 px-3.5 py-3 phone:px-0">
       <div className="h-8 w-8 flex-shrink-0 animate-pulse rounded-full bg-mist" aria-hidden="true" />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="h-3 w-20 animate-pulse rounded bg-mist" />
