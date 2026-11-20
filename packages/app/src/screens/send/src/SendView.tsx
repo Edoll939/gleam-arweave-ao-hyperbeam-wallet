@@ -13,7 +13,6 @@ import { usePlatform } from "../../../app-platform/context";
 import { addressFromQr, QrScanError } from "../../../app-platform/qr-scanner";
 import { useDisplaySettings } from "../../../display-settings";
 import { DEFAULT_AO_TOKEN, DEFAULT_AR_TOKEN } from "@gleam/ui";
-import { cn } from "@gleam/ui/src/primitives/cn.ts";
 import { truncateAddress } from "@gleam/ui/src/format/truncate-address.ts";
 import {
   AR_DENOMINATION,
@@ -1339,7 +1338,7 @@ function TokenPickerStep({
           }
           loading={loading}
           onClick={() => onSelect(null)}
-          className={cn("border-b-0", selectedToken === null && "bg-mist")}
+          className="border-b-0"
         />
 
         <TokenRow
@@ -1354,7 +1353,7 @@ function TokenPickerStep({
           }
           loading={loading}
           onClick={aoBalance?.available === false ? undefined : () => onSelect(aoToken)}
-          className={cn("border-b-0", selectedToken?.processId === DEFAULT_AO_TOKEN.processId && "bg-mist")}
+          className="border-b-0"
         />
 
         {loading ? (
@@ -1374,7 +1373,7 @@ function TokenPickerStep({
                   : formatAtomicCompact(candidate.quantity, candidate.denomination)
               }
               onClick={candidate.available === false ? undefined : () => onSelect(candidate)}
-              className={cn("border-b-0", selectedToken?.processId === candidate.processId && "bg-mist")}
+              className="border-b-0"
             />
           ))
         )}
