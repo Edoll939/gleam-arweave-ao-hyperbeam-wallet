@@ -12,8 +12,8 @@ const ROW = "grid grid-cols-[110px_minmax(0,1fr)] items-baseline gap-x-3 text-la
 /**
  * A signed item's target and tags, sorted by `tierTags`: the Action (or a
  * Type) as the headline, then addresses, app tags and the protocol tags,
- * every tag shown. Addresses are named when they are the signing wallet or
- * repeat the target.
+ * every tag shown. Tags carrying the same address share one row, so the
+ * address is read once; the signing wallet is named.
  */
 export function TagTiers({ tags, target, walletAddress }: { tags: readonly Tag[]; target: string | null; walletAddress: string | null }) {
   const t = useT();
@@ -40,17 +40,9 @@ export function TagTiers({ tags, target, walletAddress }: { tags: readonly Tag[]
 
       {target !== null || tiers.addresses.length > 0 ? (
         <Section label={t("approval.tagAddresses")}>
-          {target !== null ? <AddressRow label={t("approval.target")} address={target} note={thisWallet(target)} /> : null}
-          {tiers.addresses.map((tag, index) =>
-            target !== null && tag.value === target ? (
-              <div key={index} className={ROW}>
-                <span className="break-words text-muted"><UntrustedText text={tag.name} /></span>
-                <span className="text-caption text-muted">{t("approval.tagSameAsTarget")}</span>
-              </div>
-            ) : (
-              <AddressRow key={index} label={<UntrustedText text={tag.name} />} address={tag.value} note={thisWallet(tag.value)} />
-            ),
-          )}
+          {groupByAddress(target === null ? null : t("approval.target"), target, tiers.addresses).map((group) => (
+            <AddressRow key={group.address} labels={group.labels} address={group.address} note={thisWallet(group.address)} />
+          ))}
         </Section>
       ) : null}
 
@@ -85,11 +77,37 @@ function Section({ label, gap = "gap-2", children }: { label: string; gap?: stri
   );
 }
 
-function AddressRow({ label, address, note }: { label: ReactNode; address: string; note: string | null }) {
+interface AddressGroup {
+  address: string;
+  labels: ReactNode[];
+}
+
+/**
+ * Groups address tags by exact value, in order of first appearance, with the
+ * target first. Exact equality on purpose: an address one character off a
+ * group's stays on its own row instead of hiding among look-alikes.
+ */
+function groupByAddress(targetLabel: string | null, target: string | null, tags: readonly Tag[]): AddressGroup[] {
+  const groups = new Map<string, AddressGroup>();
+  if (target !== null && targetLabel !== null) groups.set(target, { address: target, labels: [targetLabel] });
+  tags.forEach((tag) => {
+    const label = <UntrustedText text={tag.name} />;
+    const group = groups.get(tag.value);
+    if (group) group.labels.push(label);
+    else groups.set(tag.value, { address: tag.value, labels: [label] });
+  });
+  return [...groups.values()];
+}
+
+function AddressRow({ labels, address, note }: { labels: ReactNode[]; address: string; note: string | null }) {
   const { emphasisPick } = useAddressIdentity();
   return (
     <div className={ROW}>
-      <span className="break-words text-muted">{label}</span>
+      <span className="flex flex-col break-words text-muted">
+        {labels.map((label, index) => (
+          <span key={index}>{label}</span>
+        ))}
+      </span>
       <div className="flex min-w-0 flex-col gap-0.5">
         <MemorableAddress address={address} emphasisPick={emphasisPick} sixWhereNarrow />
         {note ? <span className="text-caption text-muted">{note}</span> : null}
