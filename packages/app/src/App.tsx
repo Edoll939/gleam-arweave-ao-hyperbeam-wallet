@@ -39,7 +39,7 @@ import { QueryCachePersistence } from "./query-cache/persistence";
 import { forgetQueryCache, sweepQueryCache } from "./query-cache/sweep";
 import { sitePageUrl } from "@gleam/core";
 import { errorText } from "./i18n/errors";
-import { applyDocumentTheme, ThemeContext } from "./theme";
+import { applyDocumentTheme, ThemeContext, themeAttribute } from "./theme";
 import { releasePointerFocusOnBlur } from "./pointer-focus";
 
 /**
@@ -550,7 +550,7 @@ function AppContent({ layout, runtime: runtimeProp }: AppProps) {
         <div
           ref={setLayoutRoot}
           data-layout={layout}
-          data-theme={theme === "dark" ? "dark" : undefined}
+          data-theme={themeAttribute(theme)}
           className="min-h-full bg-background text-foreground"
         >
           {view === "main-screen" && wallet && !initError ? (

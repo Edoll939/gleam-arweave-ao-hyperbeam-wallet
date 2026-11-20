@@ -33,7 +33,7 @@ import { useSubmitTransfer } from "../../activity/src/useSubmitTransfer";
 import { feeFiatText } from "../../../transfer-review/model";
 import { validateSendAmount } from "../../activity/src/validateSendAmount";
 import { amountSchema, firstIssueMessage, recipientSchema } from "./sendFormSchema";
-import { TokenInfoPanel } from "./TokenInfoPanel";
+import { TokenHeaderGlyph, TokenHeaderTitle, TokenInfoPanel } from "./TokenInfoPanel";
 import { hasPriceHistory, TokenPriceChart } from "./TokenPriceChart";
 import { useLookalikeOf } from "./useLookalikeOf";
 import { fetchSendFeeQuote, useRecipientAssessment, useSendFeeQuote } from "./useSendQuotes";
@@ -671,11 +671,15 @@ function ComposeStep({
   if (showInfo) {
     return (
       <div className="flex min-h-full flex-col">
-        <ScreenHeader title={t("send.tokenDetails")} onBack={() => onShowInfo(false)} />
+        <ScreenHeader
+          title={t("send.tokenDetails")}
+          center={<TokenHeaderTitle token={token} />}
+          onBack={() => onShowInfo(false)}
+          end={<TokenHeaderGlyph token={token} logoUrl={sendTokenLogo(token, readRowVisibility(wallet.address), tokenLogos)} />}
+        />
         <div className="px-6 py-5 phone:px-5">
           <TokenInfoPanel
             token={token}
-            logoUrl={sendTokenLogo(token, readRowVisibility(wallet.address), tokenLogos)}
             balanceDisplay={balanceDisplay}
             balanceValue={balanceValue}
             priceDisplay={price !== undefined && currency !== undefined && currency !== ticker ? formatCurrencyValue(price, currency) : undefined}
@@ -1334,7 +1338,7 @@ function TokenPickerStep({
           }
           loading={loading}
           onClick={() => onSelect(null)}
-          className={selectedToken === null ? "bg-mist" : undefined}
+          className="border-b-0"
         />
 
         <TokenRow
@@ -1349,7 +1353,7 @@ function TokenPickerStep({
           }
           loading={loading}
           onClick={aoBalance?.available === false ? undefined : () => onSelect(aoToken)}
-          className={selectedToken?.processId === DEFAULT_AO_TOKEN.processId ? "bg-mist" : undefined}
+          className="border-b-0"
         />
 
         {loading ? (
@@ -1369,7 +1373,7 @@ function TokenPickerStep({
                   : formatAtomicCompact(candidate.quantity, candidate.denomination)
               }
               onClick={candidate.available === false ? undefined : () => onSelect(candidate)}
-              className={selectedToken?.processId === candidate.processId ? "bg-mist" : undefined}
+              className="border-b-0"
             />
           ))
         )}
@@ -1380,7 +1384,7 @@ function TokenPickerStep({
 
 function SkeletonPickerRow() {
   return (
-    <div className="flex w-full items-center gap-2.5 border-b border-line px-3.5 py-3 last:border-b-0 phone:border-b-0 phone:px-0">
+    <div className="flex w-full items-center gap-2.5 px-3.5 py-3 phone:px-0">
       <div className="h-8 w-8 flex-shrink-0 animate-pulse rounded-full bg-mist" aria-hidden="true" />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="h-3 w-20 animate-pulse rounded bg-mist" />

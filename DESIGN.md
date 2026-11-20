@@ -154,7 +154,32 @@ Dark mode has its own rules. It is not the light theme inverted.
 - **Commit actions are bright.** Send and Receive are equal level-2 tiles on the main screen. The bright primary fill is kept for the button that commits.
 - **Two kinds of tab.** Section tabs (Tokens, Collectibles, Activity) are underlined labels. The chart's range picker uses chips.
 
-Layout rules that tokens can't carry use Tailwind's `dark:` variant, which matches `data-theme="dark"`.
+Layout rules that tokens can't carry use Tailwind's `layered:` variant, which matches dark and paper, or `dark:` for a rule only dark needs.
+
+**Paper**
+
+Paper is a light theme on a grey paper with a little warmth. It shares dark's layered layout: the token sheet, underlined section tabs, tile actions and the neutral chart.
+
+| Token | Paper | Level |
+|---|---|---|
+| **Background** | `#f1f1ee` | 0: the paper |
+| **Surface** | `#fafaf9` | 1: a lighter sheet laid on it |
+| **Mist** | `#e5e3e0` | 2: tiles and chips, pressed in a step darker |
+| **Foreground**, **Primary fill** | `#1a1a19` | Warm ink |
+| **Muted** | `#696764` | |
+| **Faint** | `#979591` | |
+| **Pencil** | `#8b8985` | Pending activity |
+
+- **Weight contrast.** The headline figure is extra bold, set tight and pressed into the paper (`.gleam-figure`). Secondary amounts and prices are light.
+- **Pencil, then ink.** A pending activity row is written in pencil and inks in when it settles.
+- **Receipts.** An activity's detail is a slip with a tear line, its status a rubber stamp.
+- **Material.** The token sheet lifts off the paper with a soft edge, and settles in once.
+- **Barely any texture.** The header paper is flat colour. The token sheet has a grain you only notice up close; anything stronger, or ruled lines, competes with the rows.
+- **Light on paper.** The beam is light lying flat on the paper, not ink: clear spectral stops mixed about a third of the way toward the paper, with no glow, and 2px rather than 3px, so it sits in the pressed header. Warning, gains and losses are a step deeper than light's so they hold on the paper.
+- **Glass catches the light** only where it faces the beam: the sheet's top edge while undocked, and the commit buttons (primary and destructive) with a hairline inside the top and a faint sheen. Tiles and chips stay pressed in.
+- **Bare chart lines.** The portfolio and token charts draw the line alone, with no shading under it, its gain or loss colour mixed a quarter of the way toward the paper.
+
+The paper-only touches use the `paper:` variant and the `.gleam-*` paper classes in `theme.css`.
 
 ### Semantic Colors
 
@@ -188,6 +213,7 @@ The beam has two sets. Dark mode uses its own: the same hues with less glare, so
 #### Using the Beam
 
 - **Dividers**: A thin 3px gradient bar separates major sections and creates visual breathing room
+- **Minimal header**: The beam is a 72px run on the left. With no chart above it, a full-width beam reads as an underline on the balance
 - **Loading shimmer**: A subtle moving highlight travels across content being loaded, hinting at the beam's colors
 - **Accent never fills**: The beam colors are never used for large solid fills or buttons—they're always linear, moving, or small accent points
 - **Purple limitation**: Beam purple is not used for text on the dark canvas; use it only for decorative or non-text contexts

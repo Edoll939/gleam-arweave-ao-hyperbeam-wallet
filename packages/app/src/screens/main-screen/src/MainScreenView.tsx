@@ -96,10 +96,10 @@ export type MainScreenTab = "tokens" | "collectibles" | "activity";
 
 /** A section tab: a chip in light, an underlined label in dark so it can't be mistaken for the chart's range chips. */
 function tabClassName(active: boolean): string {
-  return `rounded-md px-2.5 py-1 text-label phone:hit-target dark:rounded-none dark:px-0 dark:pb-2 dark:font-semibold ${
+  return `rounded-md px-2.5 py-1 text-label phone:hit-target layered:rounded-none layered:px-0 layered:pb-2 layered:font-semibold ${
     active
-      ? "bg-mist text-foreground dark:bg-transparent dark:shadow-[inset_0_-2px_0_var(--color-foreground)]"
-      : "text-muted hover:text-foreground dark:text-faint"
+      ? "bg-mist text-foreground layered:bg-transparent layered:shadow-[inset_0_-2px_0_var(--color-foreground)]"
+      : "text-muted hover:text-foreground layered:text-faint"
   }`;
 }
 
@@ -459,6 +459,8 @@ export function MainScreenView({
   const collectiblesQuery = useCollectibles(runtime, wallet.address, { enabled: collectiblesOpened });
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [listDocked, setListDocked] = useState(false);
+  // Paper's sheet settles in once per mount; dropping the class after keeps an undock from replaying it.
+  const [sheetSettled, setSheetSettled] = useState(false);
   const [hiddenExpanded, setHiddenExpanded] = useState(initialTokenEditing);
   // Tagged with its address so a wallet switch reads that wallet's choices without an effect.
   const [storedVisibility, setStoredVisibility] = useState(() => ({
@@ -777,7 +779,7 @@ export function MainScreenView({
               className="flex min-w-0 items-center gap-2 rounded-lg py-1.5 pl-0 pr-1 phone:min-h-11 phone:gap-2.5"
             >
               <AccountAvatar svgMarkup={avatarSvg} label={t("mainScreen.avatarOf", { name: wallet.name })} size={24} />
-              <span className="truncate text-label dark:text-muted">{wallet.name}</span>
+              <span className="truncate text-label layered:text-muted">{wallet.name}</span>
               <span className="truncate font-mono text-label text-faint">
                 {truncateAddress(wallet.address, 6)}
               </span>
@@ -868,7 +870,7 @@ export function MainScreenView({
               masked={masked}
               onToggleMasked={displaySettings ? toggleMasked : undefined}
               layout={headerStyle}
-              chartClassName="dark:h-20"
+              chartClassName="layered:h-20"
               loading={portfolioHistoryQuery.isPending || (portfolioHistoryQuery.isFetching && !portfolioHasSeries)}
               cached={chartCached}
               cachedFetching={chartFetching}
@@ -898,7 +900,8 @@ export function MainScreenView({
           </div>
 
           <div className="px-6 pb-6 pt-3 phone:px-5 phone:pb-4 phone:pt-2">
-            <Beam />
+            {/* With no chart above it, a full-width beam reads as an underline on the balance. */}
+            <Beam className={headerStyle === "minimal" ? "w-[72px]" : undefined} />
           </div>
 
           <div className="px-6 pb-5 phone:px-5 phone:pb-4">
@@ -937,14 +940,17 @@ export function MainScreenView({
         className={`px-6 pb-6 phone:px-5 phone:pb-4 phone:[@media(max-height:700px)]:pb-2 ${
           listDocked
             ? "gleam-dock-in fixed inset-x-0 bottom-0 top-[calc(4rem+var(--inset-top))] z-20 mx-auto max-w-[var(--content-max)] overflow-y-auto bg-background"
-            : "min-h-[calc(100dvh-4rem)]"
-        } dark:rounded-t-[20px] dark:bg-surface dark:pt-2`}
+            : "gleam-paper-edge min-h-[calc(100dvh-4rem)]"
+        } layered:rounded-t-[20px] layered:bg-surface layered:pt-2 gleam-paper-sheet gleam-paper-grain ${listDocked || sheetSettled ? "" : "gleam-paper-settle"}`}
         style={listDocked ? ({ "--dock-offset": `${listDockOffsetRef.current}px` } as CSSProperties) : undefined}
+        onAnimationEnd={(event) => {
+          if (event.target === event.currentTarget) setSheetSettled(true);
+        }}
       >
         <div
           role="tablist"
           aria-label={t("mainScreen.tabsLabel")}
-          className="sticky top-0 z-10 flex items-center gap-1 bg-background pb-2.5 pt-1 phone:-mx-2.5 phone:pb-1 phone:pt-1 dark:gap-5 dark:bg-surface dark:px-3.5 phone:dark:mx-0 phone:dark:px-0"
+          className="gleam-paper-grain sticky top-0 z-10 flex items-center gap-1 bg-background pb-2.5 pt-1 phone:-mx-2.5 phone:pb-1 phone:pt-1 layered:gap-5 layered:bg-surface layered:px-3.5 phone:layered:mx-0 phone:layered:px-0"
         >
           <button
             type="button"

@@ -15,16 +15,16 @@ export interface SendReceiveActionsProps {
 }
 
 /**
- * Dark makes Send and Receive equal raised tiles, keeping the bright
+ * Dark and paper make Send and Receive equal raised tiles, keeping the bright
  * primary fill for the actions that commit (Confirm, Approve, Unlock).
  */
-const DARK_TILE = "dark:rounded-xl dark:border-transparent dark:bg-mist dark:text-foreground dark:hover:bg-line dark:hover:opacity-100 dark:disabled:bg-mist dark:disabled:text-faint dark:[&>svg]:text-muted";
+const LAYERED_TILE = "gleam-tile layered:rounded-xl layered:border-transparent layered:bg-mist layered:text-foreground layered:hover:bg-line layered:hover:opacity-100 layered:disabled:bg-mist layered:disabled:text-faint layered:[&>svg]:text-muted";
 const STACKED_CLASS = "h-14 flex-col gap-1 py-2 text-label phone:h-16 phone:gap-1.5 phone:[@media(max-height:700px)]:h-14";
 const COMPACT_CLASS = "h-12 gap-2 text-label phone:h-14";
 
 export function SendReceiveActions({ onSend, onReceive, sendDisabled = false, compact = false }: SendReceiveActionsProps) {
   const labels = useUiLabels();
-  const className = `${compact ? COMPACT_CLASS : STACKED_CLASS} ${DARK_TILE}`;
+  const className = `${compact ? COMPACT_CLASS : STACKED_CLASS} ${LAYERED_TILE}`;
   const iconSize = compact ? 18 : 20;
   return (
     <div className="flex gap-3">

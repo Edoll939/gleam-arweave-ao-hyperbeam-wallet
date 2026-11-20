@@ -1195,7 +1195,7 @@ describe("WalletLifecycleHandler: display settings", () => {
 });
 
 describe("WalletLifecycleHandler: setThemePreference", () => {
-  it("rejects a value that isn't exactly light or dark", async () => {
+  it("rejects a value that isn't light, dark or paper", async () => {
     const handler = new WalletLifecycleHandler(createFakeStorage(), keySession, TEST_KDF);
     await expect(
       handler.setThemePreference({ theme: "system" as never }),
@@ -1209,6 +1209,12 @@ describe("WalletLifecycleHandler: setThemePreference", () => {
 
     const second = new WalletLifecycleHandler(storage, keySession, TEST_KDF);
     expect(await second.getThemePreference()).toEqual({ theme: "dark" });
+  });
+
+  it("stores paper", async () => {
+    const handler = new WalletLifecycleHandler(createFakeStorage(), keySession, TEST_KDF);
+    await handler.setThemePreference({ theme: "paper" });
+    expect(await handler.getThemePreference()).toEqual({ theme: "paper" });
   });
 });
 
