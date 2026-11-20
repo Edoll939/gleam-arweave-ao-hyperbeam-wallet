@@ -59,7 +59,9 @@ import { useUiLabels, useUiLocale } from "../../labels";
  * value, not a class name.
  *
  * Dark also smooths the line, fades the area out toward the bottom, marks
- * the period's opening value with a dotted line. Paper does the same. These are `layered:` classes so light renders as before.
+ * the period's opening value with a dotted line. Paper does the same but
+ * drops the area and softens the line (`--color-chart-line-up`/`-down`).
+ * These are `layered:` classes so light renders as before.
  */
 export interface PortfolioChartPoint {
   timestamp: number;
@@ -195,6 +197,7 @@ export function PortfolioChart({
   const fillId = `portfolio-chart-fill-${useId()}`;
   const changeColorVar = isPositive ? "var(--color-positive)" : "var(--color-negative)";
   const lineColorVar = isPositive ? "var(--color-chart-up)" : "var(--color-chart-down)";
+  const chartLineColorVar = isPositive ? "var(--color-chart-line-up)" : "var(--color-chart-line-down)";
   const totalText = masked ? HIDDEN_AMOUNT : formatCurrencyValue(currentValue, currency, locale);
   // Both run on every render so hook order holds; masked figures never show a frame.
   const totalParts = formatCurrencyParts(currentValue, currency, locale);
@@ -309,7 +312,7 @@ export function PortfolioChart({
                 </linearGradient>
               </defs>
               <polygon className="layered:hidden" points={areaPoints} fill={`url(#${fillId})`} stroke="none" />
-              <path className="hidden layered:inline" d={smoothArea} fill={`url(#${fillId})`} stroke="none" />
+              <path className="hidden layered:inline paper:hidden" d={smoothArea} fill={`url(#${fillId})`} stroke="none" />
               {openY === undefined ? null : (
                 <line
                   className="hidden text-faint layered:inline"
@@ -339,7 +342,7 @@ export function PortfolioChart({
             className="hidden layered:inline"
             d={smoothPath}
             fill="none"
-            stroke={changeColorVar}
+            stroke={chartLineColorVar}
             strokeOpacity={0.85}
             strokeWidth={1.75}
             strokeLinejoin="round"

@@ -111,6 +111,9 @@
   --color-chart-down: var(--color-negative);
   --chart-fill-top: 0.12;
   --chart-fill-end: 0.12;
+  /* The price line's gain and loss colour, for the portfolio and token charts; the %-change keeps the full-strength pair. */
+  --color-chart-line-up: var(--color-positive);
+  --color-chart-line-down: var(--color-negative);
 
   /* ---- Typography ---- */
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -231,6 +234,8 @@
  * - The beam is printed ink soaked into the paper: each stop is mixed
  *   about a fifth of the way toward the paper, so it reads as colour on
  *   paper, not light on top of it.
+ * - Charts are a bare line with no shading under it, its gain or loss
+ *   colour softened the same way as the beam.
  * - Warning, gains and losses are deeper too, to keep contrast on the
  *   darker ground.
  */
@@ -259,8 +264,9 @@
 
   --color-chart-up: var(--color-foreground);
   --color-chart-down: var(--color-foreground);
-  --chart-fill-top: 0.2;
-  --chart-fill-end: 0.07;
+  /* Paper charts draw the line only, in ink mixed a quarter of the way toward the paper like the beam. */
+  --color-chart-line-up: color-mix(in srgb, var(--color-positive) 75%, var(--color-background));
+  --color-chart-line-down: color-mix(in srgb, var(--color-negative) 75%, var(--color-background));
 
   --color-warning: #c42a1f;
   --color-warning-fill: #c93a3f;
