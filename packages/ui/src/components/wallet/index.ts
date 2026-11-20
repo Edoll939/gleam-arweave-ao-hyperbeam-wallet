@@ -15,4 +15,3 @@ export { CollectibleThumbnail, type CollectibleThumbnailProps } from "./Collecti
 export { MemorableAddress, type MemorableAddressProps } from "./MemorableAddress";
 export { RecipientCard, type RecipientCardProps } from "./RecipientCard";
 export { WatchOnlyBadge } from "./WatchOnlyBadge";
-export { PaperWatermark } from "./PaperWatermark";

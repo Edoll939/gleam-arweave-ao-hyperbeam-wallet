@@ -363,7 +363,7 @@ body:has([data-layout="popup"]) {
 /* `layered:` is the layout dark and paper share: the token sheet, underlined section tabs, tile actions and the neutral chart. */
 @custom-variant layered (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="paper"], [data-theme="paper"] *));
 
-/* `paper:` is for the paper-only touches: letterpress figures, pencil, receipts and the watermark. */
+/* `paper:` is for the paper-only touches: letterpress figures, pencil and receipts. */
 @custom-variant paper (&:where([data-theme="paper"], [data-theme="paper"] *));
 
 /*

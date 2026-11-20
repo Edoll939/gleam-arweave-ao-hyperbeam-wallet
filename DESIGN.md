@@ -173,7 +173,7 @@ Paper is a light theme on a grey paper with a little warmth. It shares dark's la
 - **Weight contrast.** The headline figure is extra bold, set tight and pressed into the paper (`.gleam-figure`). Secondary amounts and prices are light.
 - **Pencil, then ink.** A pending activity row is written in pencil and inks in when it settles.
 - **Receipts.** An activity's detail is a slip with a tear line, its status a rubber stamp.
-- **Material.** The token sheet lifts off the paper with a soft edge, settles in once, and carries the Gleam mark as an embossed watermark.
+- **Material.** The token sheet lifts off the paper with a soft edge, and settles in once.
 - **Barely any texture.** The header paper is flat colour. The token sheet has a grain you only notice up close; anything stronger, or ruled lines, competes with the rows.
 - **Printed colour.** The beam is ink soaked into the paper: each stop is mixed about a fifth of the way toward it. Warning, gains and losses are a step deeper than light's so they hold on the paper.
 - **Bare chart lines.** The portfolio and token charts draw the line alone, with no shading under it, its gain or loss colour mixed a quarter of the way toward the paper.

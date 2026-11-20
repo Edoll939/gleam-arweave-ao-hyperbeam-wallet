@@ -13,7 +13,6 @@ import {
   ActivityRow,
   EmptyState,
   NetworkErrorBanner,
-  PaperWatermark,
   PortfolioChart,
   SendReceiveActions,
   SkeletonRow,
@@ -1181,7 +1180,6 @@ export function MainScreenView({
                 );
               })()
             )}
-            <PaperWatermark className="mt-6 mb-2" />
           </div>
         ) : activeTab === "collectibles" ? (
           <div
