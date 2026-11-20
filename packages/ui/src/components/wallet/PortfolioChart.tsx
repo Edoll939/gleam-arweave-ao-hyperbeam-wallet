@@ -59,7 +59,9 @@ import { useUiLabels, useUiLocale } from "../../labels";
  * value, not a class name.
  *
  * Dark also smooths the line, fades the area out toward the bottom, marks
- * the period's opening value with a dotted line. These are `dark:` classes so light renders as before.
+ * the period's opening value with a dotted line. Paper does the same but
+ * drops the area and softens the line (`--color-chart-line-up`/`-down`).
+ * These are `layered:` classes so light renders as before.
  */
 export interface PortfolioChartPoint {
   timestamp: number;
@@ -195,6 +197,7 @@ export function PortfolioChart({
   const fillId = `portfolio-chart-fill-${useId()}`;
   const changeColorVar = isPositive ? "var(--color-positive)" : "var(--color-negative)";
   const lineColorVar = isPositive ? "var(--color-chart-up)" : "var(--color-chart-down)";
+  const chartLineColorVar = isPositive ? "var(--color-chart-line-up)" : "var(--color-chart-line-down)";
   const totalText = masked ? HIDDEN_AMOUNT : formatCurrencyValue(currentValue, currency, locale);
   // Both run on every render so hook order holds; masked figures never show a frame.
   const totalParts = formatCurrencyParts(currentValue, currency, locale);
@@ -308,11 +311,11 @@ export function PortfolioChart({
                   <stop offset="0.75" stopColor={lineColorVar} style={{ stopOpacity: "var(--chart-fill-end)" }} />
                 </linearGradient>
               </defs>
-              <polygon className="dark:hidden" points={areaPoints} fill={`url(#${fillId})`} stroke="none" />
-              <path className="hidden dark:inline" d={smoothArea} fill={`url(#${fillId})`} stroke="none" />
+              <polygon className="layered:hidden" points={areaPoints} fill={`url(#${fillId})`} stroke="none" />
+              <path className="hidden layered:inline paper:hidden" d={smoothArea} fill={`url(#${fillId})`} stroke="none" />
               {openY === undefined ? null : (
                 <line
-                  className="hidden text-faint dark:inline"
+                  className="hidden text-faint layered:inline"
                   x1={0}
                   x2={CHART_WIDTH}
                   y1={openY}
@@ -326,7 +329,7 @@ export function PortfolioChart({
             </>
           )}
           <polyline
-            className="dark:hidden"
+            className="layered:hidden"
             points={linePoints}
             fill="none"
             stroke={lineColorVar}
@@ -336,10 +339,10 @@ export function PortfolioChart({
             vectorEffect="non-scaling-stroke"
           />
           <path
-            className="hidden dark:inline"
+            className="hidden layered:inline"
             d={smoothPath}
             fill="none"
-            stroke={changeColorVar}
+            stroke={chartLineColorVar}
             strokeOpacity={0.85}
             strokeWidth={1.75}
             strokeLinejoin="round"
@@ -397,7 +400,7 @@ export function PortfolioChart({
                 "rounded-md px-2.5 py-1 text-caption font-semibold phone:hit-target",
                 range === activeRange
                   ? "bg-mist text-foreground"
-                  : "text-muted hover:text-foreground dark:text-faint",
+                  : "text-muted hover:text-foreground layered:text-faint",
               )}
             >
               {range}
@@ -409,7 +412,7 @@ export function PortfolioChart({
   );
 }
 
-const HEADLINE_CLASS = "text-display font-semibold tracking-[-0.02em] tabular-nums text-foreground";
+const HEADLINE_CLASS = "gleam-figure text-display font-semibold tracking-[-0.02em] tabular-nums text-foreground";
 
 /** The large figure; a button that hides or shows balances when `onToggle` is set. */
 function Headline({ parts, trend, masked, onToggle }: { parts: CurrencyValueParts; trend: AnimatedNumberTrend | null; masked: boolean; onToggle?: () => void }) {

@@ -55,7 +55,7 @@ export function TokenPriceChart({
   const first = points[0]!.value;
   const last = points[points.length - 1]!;
   const change = first > 0 ? last.value / first - 1 : 0;
-  const lineColor = change >= 0 ? "var(--color-positive)" : "var(--color-negative)";
+  const lineColor = change >= 0 ? "var(--color-chart-line-up)" : "var(--color-chart-line-down)";
   const linePath = buildLinePath(points);
   const shown: ChartPoint = active === null ? last : points[active]!;
   const shownAt = active === null ? null : coordinates[active]!;
@@ -107,7 +107,7 @@ export function TokenPriceChart({
         )}
       >
         <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} preserveAspectRatio="none" width="100%" height="100%" aria-hidden>
-          <polygon points={`0,${CHART_HEIGHT} ${linePath} ${CHART_WIDTH},${CHART_HEIGHT}`} fill={lineColor} opacity={0.12} stroke="none" />
+          <polygon className="paper:hidden" points={`0,${CHART_HEIGHT} ${linePath} ${CHART_WIDTH},${CHART_HEIGHT}`} fill={lineColor} opacity={0.12} stroke="none" />
           <polyline
             points={linePath}
             fill="none"

@@ -33,7 +33,7 @@ export function TokenGlyph({ label, tone = 1, logoUrl, className }: TokenGlyphPr
   useEffect(() => setFailedUrl(null), [logoUrl]);
   const src = useCachedLogo(logoUrl);
   // Dark sets the logo on a plate and takes the edge off white logos, which otherwise glare on the dark sheet.
-  const imageClass = cn("h-[30px] w-[30px] flex-shrink-0 rounded-lg bg-mist object-cover dark:p-[3px] dark:brightness-95", className);
+  const imageClass = cn("h-[30px] w-[30px] flex-shrink-0 rounded-lg bg-mist object-cover layered:p-[3px] dark:brightness-95", className);
 
   if (logoUrl && logoUrl !== failedUrl) {
     // Reading the on-device cache takes a moment; a blank tile avoids flashing the letters first.

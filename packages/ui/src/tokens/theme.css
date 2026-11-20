@@ -50,6 +50,8 @@
   --color-primary-disabled-text: #c4c4c4;
   --color-muted: #737373;
   --color-faint: #a3a3a3;
+  /* Pending activity's text; only paper draws it apart from muted. */
+  --color-pencil: #737373;
 
   /* Shimmer loading-state base — a touch darker than --color-mist so a placeholder still reads against a white background. */
   --color-shimmer-base: #f0f0f0;
@@ -109,6 +111,9 @@
   --color-chart-down: var(--color-negative);
   --chart-fill-top: 0.12;
   --chart-fill-end: 0.12;
+  /* The price line's gain and loss colour, for the portfolio and token charts; the %-change keeps the full-strength pair. */
+  --color-chart-line-up: var(--color-positive);
+  --color-chart-line-down: var(--color-negative);
 
   /* ---- Typography ---- */
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -195,6 +200,7 @@
   --color-primary-disabled-text: #6b6b73;
   --color-muted: #a0a0a8;
   --color-faint: #6b6b73;
+  --color-pencil: #a0a0a8;
 
   --color-shimmer-base: #1f1f22;
 
@@ -217,6 +223,59 @@
   --color-negative: #ff8a85;
   --color-caution: #fb923c;
   --color-caution-surface: #2a1c0f;
+}
+
+/*
+ * Paper — a light theme on a grey paper with a little warmth. It takes
+ * dark's layered layout (the `layered:` variant below): elevation is a
+ * lighter sheet laid on the paper, tiles and chips are pressed a step
+ * darker, and the chart is neutral. Text is a warm ink, and the greys
+ * lean the same way so they don't look dirty on the paper.
+ * - The beam is light falling flat on the paper, not ink and not a raised
+ *   bar: clear spectral stops mixed about a third of the way toward the
+ *   paper, with no glow, so it sits in the pressed header.
+ * - Charts are a bare line with no shading under it, its gain or loss
+ *   colour softened the same way as the beam.
+ * - Warning, gains and losses are deeper too, to keep contrast on the
+ *   darker ground.
+ */
+[data-theme="paper"] {
+  --color-canvas: #e8e7e4;
+  --color-background: #f1f1ee;
+  --color-surface: #fafaf9;
+  --color-mist: #e5e3e0;
+  --color-line: #dcdad6;
+  --color-foreground: #1a1a19;
+  --color-primary-fill: #1a1a19;
+  --color-primary-disabled: #8d8b87;
+  --color-primary-disabled-text: #c7c5c1;
+  --color-muted: #696764;
+  --color-faint: #979591;
+  /* Pending activity is written in pencil and inks in once it settles. */
+  --color-pencil: #8b8985;
+
+  --color-shimmer-base: #e8e6e3;
+
+  --color-beam-red: #f0716a;
+  --color-beam-purple: #a967ef;
+  --color-beam-sky: #86cee7;
+  --color-beam-yellow: #f4dd71;
+  --color-beam-green: #6dd979;
+
+  --color-chart-up: var(--color-foreground);
+  --color-chart-down: var(--color-foreground);
+  /* Paper charts draw the line only, in ink mixed a quarter of the way toward the paper. */
+  --color-chart-line-up: color-mix(in srgb, var(--color-positive) 75%, var(--color-background));
+  --color-chart-line-down: color-mix(in srgb, var(--color-negative) 75%, var(--color-background));
+
+  --color-warning: #c42a1f;
+  --color-warning-fill: #c93a3f;
+  --color-warning-surface: #f9ece8;
+  --color-warning-border: #efcfc8;
+  --color-positive: #2e7a3c;
+  --color-negative: #b3362b;
+  --color-caution: #b23c0a;
+  --color-caution-surface: #f7ece0;
 }
 
 /*
@@ -300,6 +359,12 @@ body:has([data-layout="popup"]) {
 
 /* `dark:` styles a utility only under `data-theme="dark"`, for the few dark rules a token can't carry (layout, not colour). */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* `layered:` is the layout dark and paper share: the token sheet, underlined section tabs, tile actions and the neutral chart. */
+@custom-variant layered (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="paper"], [data-theme="paper"] *));
+
+/* `paper:` is for the paper-only touches: letterpress figures, pencil and receipts. */
+@custom-variant paper (&:where([data-theme="paper"], [data-theme="paper"] *));
 
 /*
  * The shell must set `viewport-fit=cover` for `env(safe-area-inset-*)` to
@@ -482,6 +547,11 @@ select,
     var(--color-beam-yellow) 60% 80%,
     var(--color-beam-green) 80% 100%
   );
+}
+
+/* Paper's beam is a thinner line, so it lies in the header rather than on it. */
+[data-theme="paper"] .gleam-beam-divider {
+  height: 2px;
 }
 
 /*
@@ -857,5 +927,181 @@ select,
 @media (prefers-reduced-motion: reduce) {
   .gleam-dock-in {
     animation: none;
+  }
+}
+
+/*
+ * Paper's material: a stack of sheets on a desk. These classes do nothing
+ * in light or dark.
+ *
+ * The token sheet lifts off the paper with a tight, warm edge. A wider
+ * shadow gets clipped into a box by the screen above it.
+ */
+[data-theme="paper"] .gleam-paper-sheet {
+  box-shadow:
+    0 -1px 2px rgba(38, 35, 30, 0.05),
+    0 -4px 10px rgba(38, 35, 30, 0.04);
+}
+
+/*
+ * The commit buttons, primary and destructive, are polished solids, not
+ * flat ink: a hairline of light inside the top edge and a faint sheen
+ * fading down from it. Send and Receive stay flat: they are pressed into
+ * the paper, though Send keeps the primary fill's class under its tile.
+ * In a layer so a shadow utility on one button still wins.
+ */
+@layer components {
+  [data-theme="paper"] :is(.bg-primary-fill, .bg-warning-fill):not(:disabled, .gleam-tile) {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.07), transparent 55%);
+  }
+}
+
+/*
+ * Undocked, the sheet's top edge faces the beam and catches it: a
+ * hairline of light along the top, brightest in the middle, with a
+ * faint spectral tint where it fades out. The corners stay unlit.
+ */
+[data-theme="paper"] .gleam-paper-edge {
+  position: relative;
+}
+
+[data-theme="paper"] .gleam-paper-edge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  inset-inline: 18px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-beam-purple) 22%, #fff) 18%,
+    #fff 38% 62%,
+    color-mix(in srgb, var(--color-beam-sky) 22%, #fff) 82%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+/*
+ * The sheet's paper has a barely-there grain, laid over its own colour.
+ * Its sticky tabs carry the same grain so they don't show as a clean band.
+ */
+[data-theme="paper"] .gleam-paper-grain {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.15  0 0 0 0 0.14  0 0 0 0 0.12  0 0 0 0.07 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+}
+
+/* A sheet is laid down: it settles into place with no bounce. */
+@keyframes gleam-paper-settle {
+  from {
+    transform: translateY(14px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+[data-theme="paper"] .gleam-paper-settle {
+  animation: gleam-paper-settle 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/*
+ * The screen's one large figure, pressed into the paper: extra bold, set
+ * tight, with a light edge under it. Unlayered, so it wins over the
+ * figure's own weight and tracking utilities.
+ */
+[data-theme="paper"] .gleam-figure {
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #292724;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95),
+    0 -1px 0 rgba(38, 35, 30, 0.07);
+}
+
+/*
+ * Pending activity is written in pencil: graphite text with a soft edge
+ * and a hand-drawn circle round its icon. Once it settles the row inks in.
+ */
+[data-theme="paper"] .gleam-pencil-row :is(.gleam-pencil, .gleam-pencil *) {
+  transition:
+    color 0.9s ease,
+    text-shadow 0.9s ease,
+    background-color 0.9s ease,
+    box-shadow 0.9s ease;
+}
+
+[data-theme="paper"] .gleam-pencil-row[data-pending] :is(.gleam-pencil, .gleam-pencil *) {
+  color: var(--color-pencil);
+  text-shadow:
+    0 0 0.7px var(--color-pencil),
+    0.3px 0.2px 0 rgba(139, 137, 133, 0.35);
+}
+
+[data-theme="paper"] .gleam-pencil-row[data-pending] .gleam-pencil-icon {
+  background: transparent;
+  color: var(--color-pencil);
+  box-shadow: inset 0 0 0 1.2px var(--color-pencil);
+  border-radius: 48% 52% 50% 46% / 52% 47% 53% 48%;
+}
+
+/* A rubber stamp: level, double-ruled, with uneven ink. */
+[data-theme="paper"] .gleam-stamp {
+  padding: 5px 10px 4px;
+  border: 2px solid currentColor;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 2px var(--color-surface),
+    inset 0 0 0 3px currentColor;
+  opacity: 0.82;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.6 2.15'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.6 2.15'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>");
+}
+
+/*
+ * A receipt's tear line: a dashed perforation with a punched notch at
+ * each end, cut in the colour of the sheet behind (`--perf-ground`).
+ */
+[data-theme="paper"] .gleam-perforation {
+  position: relative;
+  height: 20px;
+  background: linear-gradient(90deg, var(--color-line) 0 5px, transparent 5px 9px) center / 9px 1.5px repeat-x;
+  background-origin: content-box;
+  padding-inline: 14px;
+}
+
+[data-theme="paper"] .gleam-perforation::before,
+[data-theme="paper"] .gleam-perforation::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--perf-ground, var(--color-background));
+}
+
+[data-theme="paper"] .gleam-perforation::before {
+  left: -10px;
+  box-shadow: inset -2px 0 3px rgba(38, 35, 30, 0.06);
+}
+
+[data-theme="paper"] .gleam-perforation::after {
+  right: -10px;
+  box-shadow: inset 2px 0 3px rgba(38, 35, 30, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="paper"] .gleam-paper-settle {
+    animation: none;
+  }
+
+  [data-theme="paper"] .gleam-pencil-row :is(.gleam-pencil, .gleam-pencil *) {
+    transition: none;
   }
 }

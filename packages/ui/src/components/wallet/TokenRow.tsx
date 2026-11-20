@@ -79,7 +79,7 @@ export function TokenRow({ glyph, icon, name, amount, amountFull, value, unitPri
       {icon ?? <TokenGlyph {...glyph} />}
       <div className="flex min-w-0 flex-1 flex-col gap-px">
         <div className="truncate text-label font-semibold text-foreground">{name}</div>
-        <div className={cn("text-caption tabular-nums text-muted transition-opacity duration-500 ease-out", loading && "opacity-50", cached && !loading && (cachedFetching ? "gleam-cached-pulse" : "opacity-70"))} title={amountFull}>
+        <div className={cn("text-caption tabular-nums text-muted paper:font-light transition-opacity duration-500 ease-out", loading && "opacity-50", cached && !loading && (cachedFetching ? "gleam-cached-pulse" : "opacity-70"))} title={amountFull}>
           {amountFull ? (
             <>
               <span aria-hidden="true" className="phone:hidden">

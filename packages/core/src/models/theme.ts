@@ -1,9 +1,8 @@
 /**
- * The user-controlled light/dark theme preference. Exactly two states —
- * no "system/auto" option — light is the default for a wallet with no
- * stored preference yet.
+ * The user-controlled theme preference. No "system/auto" option; light is
+ * the default for a wallet with no stored preference yet.
  */
-export const THEME_PREFERENCES = ["light", "dark"] as const;
+export const THEME_PREFERENCES = ["light", "dark", "paper"] as const;
 
 export type ThemePreference = (typeof THEME_PREFERENCES)[number];
 
