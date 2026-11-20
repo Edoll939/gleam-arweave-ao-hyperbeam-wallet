@@ -240,21 +240,21 @@
  *   darker ground.
  */
 [data-theme="paper"] {
-  --color-canvas: #e9e8e3;
-  --color-background: #f2f1ed;
-  --color-surface: #fafaf8;
-  --color-mist: #e6e4de;
-  --color-line: #dddbd4;
-  --color-foreground: #1b1a18;
-  --color-primary-fill: #1b1a18;
-  --color-primary-disabled: #8f8c85;
-  --color-primary-disabled-text: #c9c6bf;
-  --color-muted: #6a6862;
-  --color-faint: #99968e;
+  --color-canvas: #e8e7e4;
+  --color-background: #f1f1ee;
+  --color-surface: #fafaf9;
+  --color-mist: #e5e3e0;
+  --color-line: #dcdad6;
+  --color-foreground: #1a1a19;
+  --color-primary-fill: #1a1a19;
+  --color-primary-disabled: #8d8b87;
+  --color-primary-disabled-text: #c7c5c1;
+  --color-muted: #696764;
+  --color-faint: #979591;
   /* Pending activity is written in pencil and inks in once it settles. */
-  --color-pencil: #8d8a83;
+  --color-pencil: #8b8985;
 
-  --color-shimmer-base: #e9e7e1;
+  --color-shimmer-base: #e8e6e3;
 
   --color-beam-red: #ea5049;
   --color-beam-purple: #8e45e4;
@@ -956,8 +956,8 @@ select,
  */
 [data-theme="paper"] .gleam-paper-sheet {
   box-shadow:
-    0 -1px 2px rgba(40, 35, 25, 0.05),
-    0 -4px 10px rgba(40, 35, 25, 0.04);
+    0 -1px 2px rgba(38, 35, 30, 0.05),
+    0 -4px 10px rgba(38, 35, 30, 0.04);
 }
 
 /*
@@ -965,7 +965,7 @@ select,
  * Its sticky tabs carry the same grain so they don't show as a clean band.
  */
 [data-theme="paper"] .gleam-paper-grain {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16  0 0 0 0 0.14  0 0 0 0 0.1  0 0 0 0.07 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.15  0 0 0 0 0.14  0 0 0 0 0.12  0 0 0 0.07 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
 }
 
 /* A sheet is laid down: it settles into place with no bounce. */
@@ -992,10 +992,10 @@ select,
 [data-theme="paper"] .gleam-figure {
   font-weight: 800;
   letter-spacing: -0.04em;
-  color: #2a2723;
+  color: #292724;
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.95),
-    0 -1px 0 rgba(40, 35, 25, 0.07);
+    0 -1px 0 rgba(38, 35, 30, 0.07);
 }
 
 /*
@@ -1014,7 +1014,7 @@ select,
   color: var(--color-pencil);
   text-shadow:
     0 0 0.7px var(--color-pencil),
-    0.3px 0.2px 0 rgba(141, 138, 131, 0.35);
+    0.3px 0.2px 0 rgba(139, 137, 133, 0.35);
 }
 
 [data-theme="paper"] .gleam-pencil-row[data-pending] .gleam-pencil-icon {
@@ -1065,12 +1065,12 @@ select,
 
 [data-theme="paper"] .gleam-perforation::before {
   left: -10px;
-  box-shadow: inset -2px 0 3px rgba(40, 35, 25, 0.06);
+  box-shadow: inset -2px 0 3px rgba(38, 35, 30, 0.06);
 }
 
 [data-theme="paper"] .gleam-perforation::after {
   right: -10px;
-  box-shadow: inset 2px 0 3px rgba(40, 35, 25, 0.06);
+  box-shadow: inset 2px 0 3px rgba(38, 35, 30, 0.06);
 }
 
 @media (prefers-reduced-motion: reduce) {

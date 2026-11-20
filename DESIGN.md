@@ -162,13 +162,13 @@ Paper is a light theme on a grey paper with a little warmth. It shares dark's la
 
 | Token | Paper | Level |
 |---|---|---|
-| **Background** | `#f2f1ed` | 0: the paper |
-| **Surface** | `#fafaf8` | 1: a lighter sheet laid on it |
-| **Mist** | `#e6e4de` | 2: tiles and chips, pressed in a step darker |
-| **Foreground**, **Primary fill** | `#1b1a18` | Warm ink |
-| **Muted** | `#6a6862` | |
-| **Faint** | `#99968e` | |
-| **Pencil** | `#8d8a83` | Pending activity |
+| **Background** | `#f1f1ee` | 0: the paper |
+| **Surface** | `#fafaf9` | 1: a lighter sheet laid on it |
+| **Mist** | `#e5e3e0` | 2: tiles and chips, pressed in a step darker |
+| **Foreground**, **Primary fill** | `#1a1a19` | Warm ink |
+| **Muted** | `#696764` | |
+| **Faint** | `#979591` | |
+| **Pencil** | `#8b8985` | Pending activity |
 
 - **Weight contrast.** The headline figure is extra bold, set tight and pressed into the paper (`.gleam-figure`). Secondary amounts and prices are light.
 - **Pencil, then ink.** A pending activity row is written in pencil and inks in when it settles.
