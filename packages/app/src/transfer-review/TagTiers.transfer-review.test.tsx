@@ -39,7 +39,7 @@ function renderItems(items: NonNullable<SigningApprovalPreview["items"]>) {
 afterEach(cleanup);
 
 describe("TagTiers on the signing approval screen", () => {
-  it("heads an item with its Action and names the wallet and repeats of the target", () => {
+  it("heads an item with its Action and names the wallet", () => {
     renderItems([
       item(
         [
@@ -56,10 +56,33 @@ describe("TagTiers on the signing approval screen", () => {
     expect(screen.getByText("Credit-Notice")).toBeTruthy();
     expect(screen.getByText("Addresses")).toBeTruthy();
     expect(screen.getByText("This wallet")).toBeTruthy();
-    expect(screen.getByText("Same as Target")).toBeTruthy();
+    expect(screen.getByText("Recipient")).toBeTruthy();
     expect(screen.getByText("PermaTell")).toBeTruthy();
     expect(screen.getByText("Protocol")).toBeTruthy();
     expect(screen.queryByText("Item 1")).toBeNull();
+  });
+
+  it("shows an address once under every tag that carries it, and keeps a near miss apart", () => {
+    const nearMiss = `${PROCESS.slice(0, -1)}L`;
+    renderItems([
+      item(
+        [
+          { name: "creator", value: WALLET },
+          { name: "asset-data", value: PROCESS },
+          { name: "initial-holder", value: WALLET },
+          { name: "logo", value: PROCESS },
+          { name: "thumbnail", value: nearMiss },
+        ],
+        WALLET,
+      ),
+    ]);
+    expect(screen.getAllByText("This wallet")).toHaveLength(1);
+    const row = (label: string) => screen.getByText(label).closest(".grid");
+    expect(row("Target")).toBe(row("creator"));
+    expect(row("creator")).toBe(row("initial-holder"));
+    expect(row("asset-data")).toBe(row("logo"));
+    expect(row("thumbnail")).not.toBe(row("logo"));
+    expect(row("creator")).not.toBe(row("logo"));
   });
 
   it("marks a protocol tag carrying an unexpected value", () => {
