@@ -961,6 +961,32 @@ select,
 }
 
 /*
+ * Undocked, the sheet's top edge faces the beam and catches it: a
+ * hairline of light along the top, brightest in the middle, with a
+ * faint spectral tint where it fades out. The corners stay unlit.
+ */
+[data-theme="paper"] .gleam-paper-edge {
+  position: relative;
+}
+
+[data-theme="paper"] .gleam-paper-edge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  inset-inline: 18px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-beam-purple) 22%, #fff) 18%,
+    #fff 38% 62%,
+    color-mix(in srgb, var(--color-beam-sky) 22%, #fff) 82%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+/*
  * The sheet's paper has a barely-there grain, laid over its own colour.
  * Its sticky tabs carry the same grain so they don't show as a clean band.
  */

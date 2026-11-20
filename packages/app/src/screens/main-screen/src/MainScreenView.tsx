@@ -940,7 +940,7 @@ export function MainScreenView({
         className={`px-6 pb-6 phone:px-5 phone:pb-4 phone:[@media(max-height:700px)]:pb-2 ${
           listDocked
             ? "gleam-dock-in fixed inset-x-0 bottom-0 top-[calc(4rem+var(--inset-top))] z-20 mx-auto max-w-[var(--content-max)] overflow-y-auto bg-background"
-            : "min-h-[calc(100dvh-4rem)]"
+            : "gleam-paper-edge min-h-[calc(100dvh-4rem)]"
         } layered:rounded-t-[20px] layered:bg-surface layered:pt-2 gleam-paper-sheet gleam-paper-grain ${listDocked || sheetSettled ? "" : "gleam-paper-settle"}`}
         style={listDocked ? ({ "--dock-offset": `${listDockOffsetRef.current}px` } as CSSProperties) : undefined}
         onAnimationEnd={(event) => {
