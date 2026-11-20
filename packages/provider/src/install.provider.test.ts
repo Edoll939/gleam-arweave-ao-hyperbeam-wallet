@@ -204,7 +204,9 @@ describe("installProvider routes window.arweaveWallet", () => {
     teardown = install();
     sendSiteMode(true);
 
-    expect(current()?.walletName).toBe("Gleam");
+    expect(current()?.walletName).toBe("Wander");
+    expect({ ...current() }.walletName).toBe("Wander");
+    expect((window as unknown as { gleam: Wallet }).gleam.walletName).toBe("Gleam");
     void current()!.connect!();
     await vi.waitFor(() => expect(gleamRequests()).toHaveLength(1));
     expect(other.connect).not.toHaveBeenCalled();
@@ -334,7 +336,7 @@ describe("installProvider routes window.arweaveWallet", () => {
     expect(gleamRequests()).toHaveLength(0);
     sendSiteMode(true);
     await vi.waitFor(() => expect(gleamRequests()).toHaveLength(1));
-    expect(current()?.walletName).toBe("Gleam");
+    expect(current()?.walletName).toBe("Wander");
   });
 
   it("rejects a held call the site's wallet turns out not to have", async () => {

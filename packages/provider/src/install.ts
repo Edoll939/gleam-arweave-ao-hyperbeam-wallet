@@ -145,9 +145,11 @@ export interface InstallProviderOptions {
   walletVersion: string;
   /**
    * The `walletName` `window.arweaveWallet` gives while Gleam answers it,
-   * in place of "Gleam". The app's browser, where no other wallet can be,
-   * passes Wander's ("ArConnect") so a site's Wander button reaches Gleam.
-   * `window.gleam` always says "Gleam".
+   * in place of "Gleam" when no other wallet is on the page. The app's
+   * browser, where no other wallet can be, passes Wander's ("ArConnect")
+   * so a site's Wander button reaches Gleam. With another wallet on the
+   * page, the slot gives that wallet's name. `window.gleam` always says
+   * "Gleam".
    */
   arweaveWalletName?: string;
 }
@@ -351,10 +353,25 @@ export function installProvider({ transport, walletVersion, arweaveWalletName }:
   // the user picks it there.
   const eitherHasMethod = (prop: PropertyKey): boolean => isSurfaceMethod(prop) || typeof other()?.[prop] === "function";
 
+  // While Gleam answers in another wallet's slot, the slot keeps that
+  // wallet's name. A site that saved "Wander" as its choice looks for
+  // Wander's name and skips anything named Gleam, so after "Use Gleam
+  // here" it would find no wallet to sign with. `window.gleam` still says
+  // "Gleam".
+  const slotName = (): string | undefined => {
+    if (target() !== gleam) return undefined;
+    if (arweaveWalletName !== undefined) return arweaveWalletName;
+    const name = other()?.walletName;
+    return typeof name === "string" ? name : undefined;
+  };
+
   const router = new Proxy(Object.create(null) as WalletLike, {
     get(_shell, prop) {
       if (prop === ROUTER_MARK) return true;
-      if (prop === "walletName" && arweaveWalletName !== undefined && target() === gleam) return arweaveWalletName;
+      if (prop === "walletName") {
+        const name = slotName();
+        if (name !== undefined) return name;
+      }
       const value = Reflect.get(target(), prop);
       if (typeof value === "function" || (value === undefined && !decided() && eitherHasMethod(prop))) {
         return methodFor(prop);
@@ -378,8 +395,8 @@ export function installProvider({ transport, walletVersion, arweaveWalletName }:
       const value =
         typeof descriptor.value === "function"
           ? methodFor(prop)
-          : prop === "walletName" && arweaveWalletName !== undefined && target() === gleam
-            ? arweaveWalletName
+          : prop === "walletName"
+            ? (slotName() ?? descriptor.value)
             : descriptor.value;
       return "value" in descriptor ? { ...descriptor, value, configurable: true } : { ...descriptor, configurable: true };
     },
