@@ -6,6 +6,8 @@ import type {
   Collectible,
   CollectibleSendDraft,
   CollectibleSendRequest,
+  NameTargetDraft,
+  NameTargetRequest,
   ApprovalRequest,
   Contact,
   RecipientAssessment,
@@ -239,6 +241,10 @@ export interface ProtocolMap {
   estimateCollectibleSend(req: CollectibleSendDraft): TransferFeeQuote;
   /** Sends one collectible as an L1 transaction to its process (`core/ao/collectible-transfer.ts`). */
   sendCollectible(req: CollectibleSendRequest): { txId: string };
+  /** Quotes pointing a held Permaweb Name elsewhere: the reward plus the 1 winston a set carries. */
+  estimateNameTarget(req: NameTargetDraft): TransferFeeQuote;
+  /** Points a held name at another id with an L1 `set` to its carrier (`core/ao/name-target.ts`). */
+  setNameTarget(req: NameTargetRequest): { txId: string };
 
   // approvals
   getApproval(req: { requestId: string }): ApprovalRequest;

@@ -8,6 +8,7 @@ import {
 } from "@gleam/core";
 import { collectibleTransferTags, readCollectibleTransfer, COLLECTIBLE_TRANSFER_QUANTITY } from "@gleam/core/src/ao/collectible-transfer.ts";
 import { L1_ACTIVATION_WINSTON, l1TransferTags, readL1TokenTransfer } from "@gleam/core/src/ao/l1-transfer.ts";
+import { NAME_TARGET_WINSTON, nameTargetTags, readNameTarget } from "@gleam/core/src/ao/name-target.ts";
 import { readAoTransferMessage } from "@gleam/core/src/ao/transfer-message.ts";
 import { userErrorMessage } from "@gleam/core/src/models/user-errors.ts";
 import { dappError } from "../dapp-error";
@@ -63,6 +64,8 @@ export function summarize(payload: UnsignedPayload, collectibleId?: string | nul
     // The activation winston a token transfer may carry counts in its fee,
     // as the review showed it (`estimateL1TransferFee`).
     const withValue = (value: string) => (BigInt(reward) + BigInt(value)).toString();
+    const name = readNameTarget({ target, quantity, data_size, tags });
+    if (name) return { kind: "nameTarget", carrier: name.carrier, target: name.target, fee: withValue(quantity) };
     const collectible = readCollectibleTransfer({ target, quantity, data_size, tags });
     if (collectible && collectible.assetId === collectibleId) {
       return { kind: "collectibleTransfer", asset: collectible.assetId, recipient: collectible.recipient, fee: withValue(quantity || "0") };
@@ -220,4 +223,24 @@ export function assertTransferMatches(approved: ApprovedTransfer, payload: Unsig
   if (summary.process !== approved.token) mismatch("token");
   if (summary.recipient !== approved.recipient) mismatch("recipient");
   if (summary.quantity !== approved.amount) mismatch("amount");
+}
+
+/** The name change the review showed: `fee` is the reward plus the 1 winston the set carries. */
+export interface ApprovedNameTarget {
+  carrier: string;
+  target: string;
+  fee: string;
+}
+
+/** Throws `approvalMismatch` unless `payload` is exactly the `set` in `approved`, reward included. */
+export function assertNameTargetMatches(approved: ApprovedNameTarget, payload: UnsignedPayload | undefined): void {
+  const reward = BigInt(approved.fee) - BigInt(NAME_TARGET_WINSTON);
+  if (reward < 0n) mismatch("fee");
+  checkTransaction(payload, {
+    target: approved.carrier,
+    quantity: NAME_TARGET_WINSTON,
+    tags: nameTargetTags(approved.target),
+    data: new Uint8Array(),
+    reward: reward.toString(),
+  });
 }

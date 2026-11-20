@@ -159,6 +159,70 @@ export function TransferReview({
   );
 }
 
+/**
+ * A Permaweb Name change: `@name`, then the id it will point to, then who
+ * signs and the fee (the reward plus the 1 winston the set carries). The
+ * label and the id came from outside the wallet, so both render escaped.
+ */
+export function NameTargetReview({
+  header,
+  banner,
+  label,
+  target,
+  fee,
+  from,
+  context,
+  children,
+  footer,
+}: {
+  header: ReactNode;
+  banner?: ReactNode;
+  label: string;
+  target: string;
+  fee: string | null;
+  from: TransferReviewProps["from"];
+  context: TransferContext;
+  children?: ReactNode;
+  footer: ReactNode;
+}) {
+  const t = useT();
+  return (
+    <div className="flex min-h-full flex-col">
+      {header}
+      {banner ? <div className={`${GUTTER} pt-5`}>{banner}</div> : null}
+      <div className={`flex flex-col items-center gap-3 pb-8 pt-9 text-center ${GUTTER}`}>
+        <span className="max-w-full break-words text-h2 font-semibold text-foreground">
+          <UntrustedText text={`@${label}`} />
+        </span>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 12 28"
+          className="h-7 w-3 text-muted/60"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M6 1v25M1.5 21.5 6 26l4.5-4.5" />
+        </svg>
+        <div className="flex max-w-full flex-col items-center gap-1">
+          <span className="text-label text-muted">{t("collectibles.pointsTo")}</span>
+          <span dir="ltr" className="max-w-full break-all font-mono text-body leading-relaxed text-foreground">
+            <UntrustedText text={target} />
+          </span>
+        </div>
+      </div>
+      <div className={`flex flex-col gap-3.5 ${GUTTER}`}>
+        {from ? <SummaryRow label={t("transferReview.from")} value={<FromValue from={from} />} /> : null}
+        <SummaryRow label={t("transferReview.networkFee")} value={<FeeValue fee={fee} context={context} />} />
+      </div>
+      {children ? <div className={`flex flex-col gap-3 pt-5 ${GUTTER}`}>{children}</div> : null}
+      {footer}
+    </div>
+  );
+}
+
 /** The two-button row at the bottom of a review. */
 export function ReviewButtons({
   secondaryLabel,

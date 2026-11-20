@@ -11,6 +11,7 @@ const ACTION_KEYS = new Map<string, MessageKey>([
   ["decrypt data", "errors.actionDecryptData"],
   ["encrypt data", "errors.actionEncryptData"],
   ["send collectibles", "errors.actionSendCollectibles"],
+  ["change a name's target", "errors.actionChangeNameTarget"],
   ["send this token", "errors.actionSendThisToken"],
   ["join Gleam Points", "errors.actionJoinPoints"],
   ["leave Gleam Points", "errors.actionLeavePoints"],

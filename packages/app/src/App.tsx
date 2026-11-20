@@ -12,7 +12,7 @@ import {
   NO_ADDRESS_IDENTITY_KEY,
   type AddressIdentityKey,
 } from "./address-identity";
-import { CollectibleDetailView } from "./screens/collectibles/index.tsx";
+import { CollectibleDetailView, NameTargetView } from "./screens/collectibles/index.tsx";
 import { MainScreenView, type MainScreenTab } from "./screens/main-screen/index.tsx";
 import { useNetworkSettings } from "./screens/main-screen/src/useNetworkSettings";
 import { SendCollectibleView, SendView } from "./screens/send/index.tsx";
@@ -113,6 +113,7 @@ type MainSubView =
   | { kind: "language" }
   | { kind: "collectible"; collectible: Collectible }
   | { kind: "send-collectible"; collectible: Collectible }
+  | { kind: "name-target"; collectible: Collectible; target: string }
   | { kind: "points" }
   | { kind: "use-gleam-on-site"; origin: string; favIconUrl: string | null; requestedPermissions: PermissionType[] };
 
@@ -345,8 +346,23 @@ function AppContent({ layout, runtime: runtimeProp }: AppProps) {
         collectible={subView.collectible}
         onBack={() => setSubView({ kind: "home" })}
         onSend={(collectible) => setSubView({ kind: "send-collectible", collectible })}
+        onChangeTarget={(target) => setSubView({ kind: "name-target", collectible: subView.collectible, target })}
+        sheetContainer={layoutRoot}
       />
     );
+  } else if (subView.kind === "name-target") {
+    const { collectible, target } = subView;
+    const name = collectible.permawebName;
+    content = name ? (
+      <NameTargetView
+        runtime={runtime}
+        wallet={wallet}
+        collectible={{ ...collectible, permawebName: name }}
+        target={target}
+        onBack={() => setSubView({ kind: "collectible", collectible })}
+        onDone={(updated) => setSubView({ kind: "collectible", collectible: updated })}
+      />
+    ) : null;
   } else if (subView.kind === "send-collectible") {
     const { collectible } = subView;
     content = (

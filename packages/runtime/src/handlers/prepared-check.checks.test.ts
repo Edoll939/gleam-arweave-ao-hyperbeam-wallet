@@ -5,7 +5,8 @@ import { buildUnsignedDataItem } from "@gleam/core/src/arweave/data-item.ts";
 import type { ArweaveTransactionJson } from "@gleam/core/src/arweave/transaction.ts";
 import { bytesToBase64Url } from "@gleam/core/src/vault/base64.ts";
 import type { UnsignedPayload } from "@gleam/core/src/vault/signing.ts";
-import { assertTransferMatches, checkDataItem, checkTransaction, summarize } from "./prepared-check";
+import { nameTargetTags } from "@gleam/core/src/ao/name-target.ts";
+import { assertNameTargetMatches, assertTransferMatches, checkDataItem, checkTransaction, summarize } from "./prepared-check";
 
 /**
  * Direct tests for the prepared-bytes checks: the last line before any
@@ -417,5 +418,56 @@ describe("summarize", () => {
       dataSize: "0",
       unreadableTokenTransfer: true,
     });
+  });
+});
+
+describe("assertNameTargetMatches", () => {
+  // The fee the review showed: the reward plus the 1 winston the set carries.
+  const approved = { carrier: PROCESS_ID, target: RECIPIENT, fee: "1001" };
+  const setTx = (overrides: Partial<ArweaveTransactionJson> = {}) =>
+    tx({ target: PROCESS_ID, quantity: "1", reward: FEE, tags: encodeTags(nameTargetTags(RECIPIENT)), ...overrides });
+
+  it("accepts the exact set", () => {
+    expect(() => assertNameTargetMatches(approved, setTx())).not.toThrow();
+  });
+
+  it("refuses a different carrier", () => {
+    expect(() => assertNameTargetMatches(approved, setTx({ target: OTHER }))).toThrow(/recipient/);
+  });
+
+  it("refuses a different target in the tags", () => {
+    expect(() => assertNameTargetMatches(approved, setTx({ tags: encodeTags(nameTargetTags(OTHER)) }))).toThrow(/tags/);
+  });
+
+  it("refuses any quantity but 1 winston", () => {
+    expect(() => assertNameTargetMatches(approved, setTx({ quantity: "0" }))).toThrow(/amount/);
+    expect(() => assertNameTargetMatches(approved, setTx({ quantity: "2" }))).toThrow(/amount/);
+  });
+
+  it("refuses a reward that isn't the fee less the winston", () => {
+    expect(() => assertNameTargetMatches(approved, setTx({ reward: "1001" }))).toThrow(/fee/);
+  });
+
+  it("refuses an extra tag", () => {
+    expect(() =>
+      assertNameTargetMatches(approved, setTx({ tags: encodeTags([...nameTargetTags(RECIPIENT), { name: "Assign-To", value: OTHER }]) })),
+    ).toThrow(/tags/);
+  });
+
+  it("refuses data", () => {
+    expect(() => assertNameTargetMatches(approved, setTx({ data: "AA", data_size: "1" }))).toThrow(/data/);
+  });
+
+  it("refuses a data item", () => {
+    expect(() => assertNameTargetMatches(approved, aoItem(RECIPIENT, "1"))).toThrow();
+  });
+
+  it("summarizes the set from its bytes, with the winston in the fee", () => {
+    expect(summarize(setTx())).toEqual({ kind: "nameTarget", carrier: PROCESS_ID, target: RECIPIENT, fee: "1001" });
+  });
+
+  it("summarizes a set with an extra tag as a plain transaction", () => {
+    const extra = setTx({ tags: encodeTags([...nameTargetTags(RECIPIENT), { name: "x", value: "y" }]) });
+    expect(summarize(extra).kind).toBe("transaction");
   });
 });

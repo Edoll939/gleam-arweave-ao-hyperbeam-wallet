@@ -369,6 +369,13 @@ function ApprovalRootContent({
             ? request.preview.collectible
             : undefined
         }
+        nameTarget={
+          request.preview.kind !== "connect" &&
+          request.preview.kind !== "addToken" &&
+          request.preview.kind !== "scanAttestation"
+            ? request.preview.nameTarget
+            : undefined
+        }
         token={
           request.preview.kind !== "connect" &&
           request.preview.kind !== "addToken" &&
