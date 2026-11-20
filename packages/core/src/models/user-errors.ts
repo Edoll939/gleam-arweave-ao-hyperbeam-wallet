@@ -94,6 +94,9 @@ export const USER_ERRORS = {
   collectibleRecipientInvalid: "That doesn't look like a full Arweave address: check for a missing character.",
   collectibleSendToSelf: "That's this wallet's own address. Send to a different address.",
   collectibleSendToAsset: "That's the collectible's own address. Enter the recipient's wallet address.",
+  nameTargetInvalid: "That isn't an Arweave id. An id is 43 letters, numbers, - and _.",
+  nameNotHeld: "This wallet no longer holds this name.",
+  nameStateUnavailable: "Gleam couldn't check who holds this name. Try again.",
   noPeerConfigured: "No HyperBEAM peer configured. Add one in Network settings to find collectibles.",
 
   tokenPasteId: "Paste a token's process id.",

@@ -38,6 +38,8 @@ import {
   type Grant,
   type HardwareDevice,
   type HardwareWalletMethod,
+  type NameTargetPreview,
+  type NameTargetRequest,
   type WalletMethod,
   type PermissionType,
   type ScanAttestationApprovalPreview,
@@ -76,6 +78,7 @@ import { userErrorMessage } from "@gleam/core/src/models/user-errors.ts";
 import { safeSiteIconUrl } from "./site-wallet";
 import { dappError } from "../dapp-error";
 import {
+  assertNameTargetMatches,
   assertTransferMatches,
   checkDataItem,
   checkTransaction,
@@ -231,6 +234,8 @@ export interface SigningRequestInput {
   tokenTicker?: string | null;
   /** A wallet `transfer` of this collectible: an L1 transaction to its process carrying the transfer tags. */
   collectible?: CollectibleRef | null;
+  /** A `setNameTarget`'s name and new target; `fee` is then the reward plus the 1 winston the set carries. */
+  nameTarget?: NameTargetPreview | null;
   /** See `SigningApprovalPreview.unreadableTokenTransfer`. */
   unreadableTokenTransfer?: boolean;
   /** See `SigningApprovalPreview.tokenImpersonating`. */
@@ -321,7 +326,18 @@ export interface DeviceTransferSubmitter {
   ): Promise<{ txId: string }>;
 }
 
-export type TransferSubmitter = AoTransferSubmitter & Partial<DeviceTransferSubmitter>;
+/** The `TransferHandler` steps a hardware wallet's name change is split into around the device signature. */
+export interface DeviceNameTargetSubmitter {
+  prepareDeviceNameTarget(req: NameTargetRequest, ownerB64Url: string): Promise<UnsignedPayload>;
+  finishDeviceNameTarget(
+    req: NameTargetRequest,
+    unsigned: UnsignedPayload,
+    signature: Uint8Array,
+    expectedOwner: string,
+  ): Promise<{ txId: string }>;
+}
+
+export type TransferSubmitter = AoTransferSubmitter & Partial<DeviceTransferSubmitter> & Partial<DeviceNameTargetSubmitter>;
 
 /**
  * The `PointsHandler` steps a scan attestation needs. A keyfile signs and
@@ -550,6 +566,7 @@ const DEVICE_SIGNED_KINDS: ReadonlySet<ApprovalKind> = new Set([
   "pointsProof",
   "scanAttestation",
   "signMessage",
+  "setNameTarget",
 ]);
 
 const WALLET_SWITCHED = "The active wallet changed.";
@@ -669,6 +686,12 @@ function assertPreparedMatches(input: SigningRequestInput, payloads: UnsignedPay
         payloads[0],
       );
       return;
+    case "setNameTarget": {
+      const name = input.nameTarget;
+      if (!name || payloads.length !== 1) mismatch("target");
+      assertNameTargetMatches({ carrier: name.carrier, target: name.target, fee: input.fee ?? "" }, payloads[0]);
+      return;
+    }
     case "signMessage": {
       const [payload] = payloads;
       if (payloads.length !== 1 || payload?.kind !== "message") mismatch("message");
@@ -887,6 +910,7 @@ async function buildSigningPreview(input: SigningRequestInput): Promise<SigningA
     tokenDenomination: input.tokenDenomination ?? null,
     tokenTicker: input.tokenTicker ?? null,
     ...(input.collectible ? { collectible: input.collectible } : {}),
+    ...(input.nameTarget ? { nameTarget: input.nameTarget } : {}),
     ...(input.unreadableTokenTransfer ? { unreadableTokenTransfer: true } : {}),
     ...(input.tokenImpersonating ? { tokenImpersonating: true } : {}),
     ...dataPreview(input.payload),
@@ -1583,6 +1607,8 @@ export class ApprovalHandler {
       case "transferAoTokens":
       case "transfer":
         return [await this.deviceTransfers().prepareDeviceTransfer(this.transferRequestOf(walletId, input), owner)];
+      case "setNameTarget":
+        return [await this.deviceNameTargets().prepareDeviceNameTarget(this.nameTargetRequestOf(walletId, input), owner)];
       case "pointsProof":
       case "scanAttestation":
         return [{ kind: "transaction", transaction: await buildOwnershipTransaction(owner, textDecoder.decode(input.payload)) }];
@@ -1625,6 +1651,8 @@ export class ApprovalHandler {
         // A dApp's transferAoTokens resolves to `{ id }`; a wallet send to `submitTransfer`'s `{ txId }`.
         return input.kind === "transfer" ? { txId } : { id: txId };
       }
+      case "setNameTarget":
+        return this.deviceNameTargets().finishDeviceNameTarget(this.nameTargetRequestOf(walletId, input), payload!, signature!, owner);
       case "pointsProof":
         return { owner, address: wallet.address, signature: bytesToBase64Url(signature!) } satisfies PointsDeviceProof;
       case "scanAttestation":
@@ -1648,6 +1676,21 @@ export class ApprovalHandler {
       throw new Error(dappError("Hardware wallet transfers aren't wired. ApprovalHandler was constructed without them."));
     }
     return transfers as DeviceTransferSubmitter;
+  }
+
+  private deviceNameTargets(): DeviceNameTargetSubmitter {
+    const transfers = this.transfers;
+    if (!transfers?.prepareDeviceNameTarget || !transfers.finishDeviceNameTarget) {
+      throw new Error(dappError("Hardware wallet name changes aren't wired. ApprovalHandler was constructed without them."));
+    }
+    return transfers as DeviceNameTargetSubmitter;
+  }
+
+  /** Built from the stored request the user approved, never from its preview. */
+  private nameTargetRequestOf(walletId: string, input: SigningRequestInput): NameTargetRequest {
+    const name = input.nameTarget;
+    if (!name) throw new Error(dappError("A setNameTarget approval is missing its name."));
+    return { walletId, carrier: name.carrier, label: name.label, target: name.target, fee: input.fee ?? null };
   }
 
   private transferRequestOf(walletId: string, input: SigningRequestInput): SubmitTransferRequest {
@@ -1684,6 +1727,24 @@ export class ApprovalHandler {
       tokenDenomination: req.tokenDenomination ?? null,
       tokenTicker: req.tokenTicker ?? null,
       collectible: req.collectible ?? null,
+      payload: new Uint8Array(),
+      tags: [],
+    });
+    return result as { txId: string };
+  }
+
+  /**
+   * A name change from the popup by a hardware wallet: reviewed and signed
+   * in the approval window, with Gleam as the origin. Resolves to the
+   * posted `set`'s `{ txId }`.
+   */
+  async requestNameTarget(req: NameTargetRequest): Promise<{ txId: string }> {
+    const result = await this.requestApproval({
+      kind: "setNameTarget",
+      origin: WALLET_APPROVAL_ORIGIN,
+      walletId: req.walletId,
+      fee: req.fee,
+      nameTarget: { carrier: req.carrier, label: req.label, target: req.target },
       payload: new Uint8Array(),
       tags: [],
     });
@@ -1909,6 +1970,10 @@ export class ApprovalHandler {
       // A keyfile proves ownership with signMessage in PointsHandler and never reaches here.
       case "pointsProof":
         throw new Error(dappError("Only a hardware wallet proves ownership through the approval window."));
+
+      // A keyfile signs a name change in TransferHandler.setNameTarget, after the popup's review.
+      case "setNameTarget":
+        throw new Error(dappError("Only a hardware wallet changes a name through the approval window."));
 
       case "scanAttestation":
         return this.attestationSubmitter().attest({ walletId, attestation: parsedAttestationOf(input) });

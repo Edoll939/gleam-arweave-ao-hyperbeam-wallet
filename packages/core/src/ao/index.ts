@@ -21,5 +21,13 @@ export {
   readCollectibleTransfer,
   COLLECTIBLE_TRANSFER_QUANTITY,
 } from "./collectible-transfer";
+export {
+  assertHoldsName,
+  estimateNameTargetFee,
+  nameTargetTags,
+  prepareNameTarget,
+  readNameTarget,
+  NAME_TARGET_WINSTON,
+} from "./name-target";
 export { discoverHyperBeamPeers, normalizePeerUrl } from "./peer-discovery";
 export type { DiscoverHyperBeamPeersOptions } from "./peer-discovery";

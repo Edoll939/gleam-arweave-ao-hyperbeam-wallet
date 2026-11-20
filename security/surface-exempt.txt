@@ -146,7 +146,9 @@ packages/app/src/screens/browser/src/history.ts A screen outside the key, signin
 packages/app/src/screens/browser/src/useBrowserSites.ts A screen outside the key, signing and approval paths.
 packages/app/src/screens/browser/src/useVisitTime.ts A screen outside the key, signing and approval paths.
 packages/app/src/screens/collectibles/index.tsx A screen outside the key, signing and approval paths.
+packages/app/src/screens/collectibles/src/ChangeTargetSheet.tsx The name change form; transfer-review (listed) shows the change and the background checks it.
 packages/app/src/screens/collectibles/src/CollectibleDetailView.tsx A screen outside the key, signing and approval paths.
+packages/app/src/screens/collectibles/src/NameTargetView.tsx The name change review screen; its layout is transfer-review (listed) and the background checks what is signed.
 packages/app/src/screens/collectibles/src/CollectiblesGallery.tsx A screen outside the key, signing and approval paths.
 packages/app/src/screens/connected-apps/index.tsx A screen outside the key, signing and approval paths.
 packages/app/src/screens/connected-apps/src/ConnectedAppsView.tsx Grant list and revoke buttons; revocation is the listed revokeGrant handler, which also rejects pending approvals.

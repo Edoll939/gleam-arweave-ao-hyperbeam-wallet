@@ -82,6 +82,7 @@
 2 apps/extension/entrypoints/connect/
 2 apps/mobile/src/adapters/keystone.tsx
 2 packages/core/src/ao/collectible-transfer.ts
+2 packages/core/src/ao/name-target.ts
 2 packages/core/src/arweave/bundler.ts
 2 packages/app/src/screens/send/src/sendFormSchema.ts
 2 packages/app/src/screens/activity/src/validateSendAmount.ts

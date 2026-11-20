@@ -17,6 +17,8 @@ export const collectibles = defineMessages({
     showLess: "Show less",
     name: "Name",
     pointsTo: "Points to",
+    changeTarget: "Change target",
+    newTarget: "New target",
     listedForSale: "Listed for sale",
   },
   es: {
@@ -35,6 +37,8 @@ export const collectibles = defineMessages({
     showLess: "Mostrar menos",
     name: "Nombre",
     pointsTo: "Apunta a",
+    changeTarget: "Cambiar destino",
+    newTarget: "Nuevo destino",
     listedForSale: "En venta",
   },
   id: {
@@ -53,6 +57,8 @@ export const collectibles = defineMessages({
     showLess: "Tampilkan lebih sedikit",
     name: "Nama",
     pointsTo: "Mengarah ke",
+    changeTarget: "Ubah target",
+    newTarget: "Target baru",
     listedForSale: "Dijual",
   },
   "pt-BR": {
@@ -71,6 +77,8 @@ export const collectibles = defineMessages({
     showLess: "Mostrar menos",
     name: "Nome",
     pointsTo: "Aponta para",
+    changeTarget: "Mudar destino",
+    newTarget: "Novo destino",
     listedForSale: "À venda",
   },
   vi: {
@@ -89,6 +97,8 @@ export const collectibles = defineMessages({
     showLess: "Ẩn bớt",
     name: "Tên",
     pointsTo: "Trỏ đến",
+    changeTarget: "Đổi đích",
+    newTarget: "Đích mới",
     listedForSale: "Đang rao bán",
   },
   tr: {
@@ -107,6 +117,8 @@ export const collectibles = defineMessages({
     showLess: "Daha az göster",
     name: "Ad",
     pointsTo: "Yönlendirdiği yer",
+    changeTarget: "Hedefi değiştir",
+    newTarget: "Yeni hedef",
     listedForSale: "Satışta",
   },
   ru: {
@@ -125,6 +137,8 @@ export const collectibles = defineMessages({
     showLess: "Свернуть",
     name: "Имя",
     pointsTo: "Указывает на",
+    changeTarget: "Изменить цель",
+    newTarget: "Новая цель",
     listedForSale: "Выставлено на продажу",
   },
   ja: {
@@ -143,6 +157,8 @@ export const collectibles = defineMessages({
     showLess: "一部を表示",
     name: "ネーム",
     pointsTo: "リンク先",
+    changeTarget: "リンク先を変更",
+    newTarget: "新しいリンク先",
     listedForSale: "出品中",
   },
   ko: {
@@ -161,6 +177,8 @@ export const collectibles = defineMessages({
     showLess: "간략히",
     name: "네임",
     pointsTo: "연결 대상",
+    changeTarget: "대상 변경",
+    newTarget: "새 대상",
     listedForSale: "판매 중",
   },
   "zh-CN": {
@@ -179,6 +197,8 @@ export const collectibles = defineMessages({
     showLess: "收起",
     name: "名称",
     pointsTo: "指向",
+    changeTarget: "更改指向",
+    newTarget: "新的指向",
     listedForSale: "出售中",
   },
   "zh-TW": {
@@ -197,6 +217,8 @@ export const collectibles = defineMessages({
     showLess: "收合",
     name: "名稱",
     pointsTo: "指向",
+    changeTarget: "變更指向",
+    newTarget: "新的指向",
     listedForSale: "出售中",
   },
 });

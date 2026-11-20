@@ -178,7 +178,8 @@ export function transferRequestFromPreview(preview: SigningApprovalPreview): Tra
       ...(unreadable ? { unreadableTokenTransfer: true } : {}),
     };
   }
-  if (preview.recipient === null || items) return null;
+  // A name change moves nothing; it has its own review (`NameTargetReview`).
+  if (preview.recipient === null || items || preview.kind === "setNameTarget") return null;
   const transfer = line(
     preview.collectible ? preview.collectible.id : preview.token,
     preview.tokenTicker,

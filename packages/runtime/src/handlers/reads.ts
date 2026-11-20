@@ -443,6 +443,26 @@ export class ReadsHandler {
     );
   }
 
+  /**
+   * Points a cached name at the target its accepted `set` names. The
+   * carrier reads the set once the transaction is mined, so a rediscovery
+   * meanwhile still reads the old target.
+   */
+  async setCachedNameTarget(req: { address: string; id: string; target: string }): Promise<void> {
+    await updateStored<CollectiblesCache>(this.storage, `${COLLECTIBLES_KEY_PREFIX}${req.address}`, (raw) =>
+      isCollectiblesCache(raw)
+        ? {
+            ...raw,
+            collectibles: raw.collectibles.map((collectible) =>
+              collectible.id === req.id && collectible.permawebName
+                ? { ...collectible, permawebName: { ...collectible.permawebName, target: req.target } }
+                : collectible,
+            ),
+          }
+        : undefined,
+    );
+  }
+
   /** Makes the next `getCollectibles` rediscover, keeping the list to show meanwhile. */
   private async markCollectiblesStale(address: string): Promise<void> {
     await updateStored<CollectiblesCache>(this.storage, `${COLLECTIBLES_KEY_PREFIX}${address}`, (current) =>

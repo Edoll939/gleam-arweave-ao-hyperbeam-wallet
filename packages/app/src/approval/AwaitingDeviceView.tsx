@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { CollectibleRef, DeviceSigningRequest, DeviceSigningSummary } from "@gleam/core";
+import type { CollectibleRef, DeviceSigningRequest, DeviceSigningSummary, NameTargetPreview } from "@gleam/core";
 import { MemorableAddress } from "@gleam/ui/src/components/wallet/index.ts";
 import { useAddressIdentity } from "../address-identity";
 import { useT, type TFunction } from "../i18n";
@@ -8,7 +8,7 @@ import { DEVICE_NAMES, type DeviceSignPanel } from "./device-panels";
 import { errorText } from "../i18n/errors";
 import { RequestHeader } from "../transfer-review/RequestHeader";
 import { UntrustedText } from "./UntrustedText";
-import { DeviceBanner, ReviewButtons, TransferReview } from "../transfer-review/TransferReview";
+import { DeviceBanner, NameTargetReview, ReviewButtons, TransferReview } from "../transfer-review/TransferReview";
 import { requestTypeText, transferRequestFromDevice, type TransferContext } from "../transfer-review/model";
 
 /**
@@ -39,6 +39,8 @@ export interface AwaitingDeviceViewProps {
   token?: { processId: string; denomination: number | null; ticker: string | null; impersonating?: true };
   /** The preview's collectible, named and pictured when the payload sends that asset. */
   collectible?: CollectibleRef | null;
+  /** The preview's name change; its label names the carrier when the payload is that name's set. */
+  nameTarget?: NameTargetPreview | null;
   /** The signing wallet; defaults to the device's address alone. */
   from?: { name: string | null; address: string };
   context?: TransferContext;
@@ -48,7 +50,7 @@ export interface AwaitingDeviceViewProps {
 export const DEVICE_HEARTBEAT_MS = 60_000;
 
 function requestTypeOf(summaries: DeviceSigningSummary[], t: TFunction): string {
-  if (summaries.some((summary) => summary.kind === "transaction")) return t("approval.actionSignAndSend");
+  if (summaries.some((summary) => summary.kind === "transaction" || summary.kind === "nameTarget")) return t("approval.actionSignAndSend");
   if (summaries.length > 1) return t("approval.actionSignMessagesCount", { count: summaries.length });
   return t("approval.actionSignMessage");
 }
@@ -63,6 +65,7 @@ export function AwaitingDeviceView({
   onActivity,
   token,
   collectible,
+  nameTarget,
   from,
   context = {},
 }: AwaitingDeviceViewProps) {
@@ -126,6 +129,25 @@ export function AwaitingDeviceView({
       warned={false}
     />
   );
+
+  // Read from the payload; the preview only lends the label, and only for the carrier the payload names.
+  const [only] = device.summaries;
+  if (device.summaries.length === 1 && only?.kind === "nameTarget" && nameTarget?.carrier === only.carrier) {
+    return (
+      <NameTargetReview
+        header={<RequestHeader origin={origin} icon={siteIcon} requestType={t("collectibles.changeTarget")} />}
+        banner={<DeviceBanner text={t("approval.confirmOnDevice", { device: name })} />}
+        label={nameTarget.label}
+        target={only.target}
+        fee={only.fee}
+        from={from ?? { name: null, address: device.address }}
+        context={context}
+        footer={buttons}
+      >
+        {panelArea}
+      </NameTargetReview>
+    );
+  }
 
   if (transfer) {
     return (
@@ -220,6 +242,15 @@ function SummaryRows({ summary, token }: { summary: DeviceSigningSummary; token:
       <>
         <AddressRow label={t("approval.collectible")} address={summary.asset} />
         <AddressRow label={t("approval.recipient")} address={summary.recipient} />
+        <Row label={t("approval.fee")} value={`${formatWinstonAsAr(summary.fee, 12)} AR`} />
+      </>
+    );
+  }
+  if (summary.kind === "nameTarget") {
+    return (
+      <>
+        <AddressRow label={t("collectibles.name")} address={summary.carrier} />
+        <AddressRow label={t("collectibles.pointsTo")} address={summary.target} />
         <Row label={t("approval.fee")} value={`${formatWinstonAsAr(summary.fee, 12)} AR`} />
       </>
     );

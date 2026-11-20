@@ -6,6 +6,7 @@ import { collectibleKindLabel } from "./CollectiblesGallery";
 import { Button } from "@gleam/ui/src/primitives/button.tsx";
 import { ScreenHeader } from "@gleam/ui/src/primitives/screen-header.tsx";
 import { ScreenFooter } from "@gleam/ui/src/primitives/screen-footer.tsx";
+import { ChangeTargetSheet } from "./ChangeTargetSheet";
 
 export interface CollectibleDetailViewProps {
   collectible: Collectible;
@@ -14,15 +15,28 @@ export interface CollectibleDetailViewProps {
   onBack: () => void;
   /** The Send button only renders when this is provided. */
   onSend?: (collectible: Collectible) => void;
+  /** The Change target button renders for a held, unlisted name when this is provided. */
+  onChangeTarget?: (target: string) => void;
+  /** Where the Change target sheet mounts. */
+  sheetContainer?: HTMLElement | null;
 }
 
-export function CollectibleDetailView({ collectible, gatewayUrl, onBack, onSend }: CollectibleDetailViewProps) {
+export function CollectibleDetailView({
+  collectible,
+  gatewayUrl,
+  onBack,
+  onSend,
+  onChangeTarget,
+  sheetContainer = null,
+}: CollectibleDetailViewProps) {
   const t = useT();
+  const [changingTarget, setChangingTarget] = useState(false);
   const name = collectible.permawebName;
   const siteUrl = name && gatewayUrl ? nameSiteUrl(name.label, gatewayUrl) : undefined;
   const subtitle = name ? (name.listed ? `${t("collectibles.name")} · ${t("collectibles.listedForSale")}` : t("collectibles.name")) : collectible.collectionName;
   // An escrowed name isn't the wallet's to send until its sale order closes.
   const send = name?.listed ? undefined : onSend;
+  const changeTarget = name && !name.listed ? onChangeTarget : undefined;
   return (
     <div className="flex min-h-full flex-col">
       <ScreenHeader title={t("collectibles.detailTitle")} onBack={onBack} />
@@ -70,10 +84,27 @@ export function CollectibleDetailView({ collectible, gatewayUrl, onBack, onSend 
 
         {collectible.description ? <CollectibleDescription key={collectible.id} text={collectible.description} /> : null}
 
-        {send ? (
-          <ScreenFooter className="gap-0 pt-2">
-            <Button onClick={() => send(collectible)}>{t("collectibles.send")}</Button>
+        {send || changeTarget ? (
+          <ScreenFooter className="gap-2.5 pt-2">
+            {send ? <Button onClick={() => send(collectible)}>{t("collectibles.send")}</Button> : null}
+            {changeTarget ? (
+              <Button variant="secondary" onClick={() => setChangingTarget(true)}>
+                {t("collectibles.changeTarget")}
+              </Button>
+            ) : null}
           </ScreenFooter>
+        ) : null}
+        {changeTarget ? (
+          <ChangeTargetSheet
+            open={changingTarget}
+            onOpenChange={setChangingTarget}
+            container={sheetContainer}
+            current={name?.target}
+            onReview={(target) => {
+              setChangingTarget(false);
+              changeTarget(target);
+            }}
+          />
         ) : null}
       </div>
     </div>

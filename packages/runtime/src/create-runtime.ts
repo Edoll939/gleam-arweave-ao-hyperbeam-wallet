@@ -186,6 +186,7 @@ export function createRuntime(platform: Platform): Runtime {
       const metadata = req.token === null ? {} : await resolveTokenDenominationAndTicker(await walletAddress(req.walletId), req.token);
       return approval.requestWalletTransfer({ ...req, ...metadata });
     },
+    requestNameTarget: (req) => approval.requestNameTarget(req),
   }, reads, reads);
   const contacts = new ContactsHandler(storage);
   const browserSites = new BrowserSitesHandler(storage);
@@ -690,6 +691,8 @@ export function createRuntime(platform: Platform): Runtime {
     submitTransfer: (data) => transfer.submitTransfer(requireWalletId(data)),
     estimateCollectibleSend: (data) => transfer.estimateCollectibleSend(requireWalletId(data)),
     sendCollectible: (data) => transfer.sendCollectible(requireWalletId(data)),
+    estimateNameTarget: (data) => transfer.estimateNameTarget(requireWalletId(data)),
+    setNameTarget: (data) => transfer.setNameTarget(requireWalletId(data)),
 
     // approvals
     getApproval: (data) => approval.getApproval(data),

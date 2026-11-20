@@ -10,7 +10,7 @@ import { DataItemCard } from "../transfer-review/DataItemCard";
 import { TagTiers } from "../transfer-review/TagTiers";
 import { RequestHeader } from "../transfer-review/RequestHeader";
 import { ArmingLabel } from "./ArmingLabel";
-import { ReviewButtons, TransferReview } from "../transfer-review/TransferReview";
+import { NameTargetReview, ReviewButtons, TransferReview } from "../transfer-review/TransferReview";
 import { requestTypeText, transferRequestFromPreview, type TransferContext } from "../transfer-review/model";
 import { CopyIcon } from "@gleam/ui/src/primitives/copy-icons.tsx";
 
@@ -51,6 +51,7 @@ const REQUEST_KIND_COPY: Record<SigningApprovalPreview["kind"], MessageKey> = {
   signMessage: "approval.actionSignMessage",
   transfer: "approval.actionSend",
   pointsProof: "approval.actionProveOwnership",
+  setNameTarget: "collectibles.changeTarget",
 };
 
 function actionCopy(preview: SigningApprovalPreview, t: TFunction): string {
@@ -107,6 +108,31 @@ export function SigningApprovalScreen({
       {error}
     </div>
   ) : null;
+
+  if (preview.kind === "setNameTarget" && preview.nameTarget) {
+    return (
+      <NameTargetReview
+        header={<RequestHeader origin={origin} icon={siteIcon} requestType={actionCopy(preview, t)} />}
+        label={preview.nameTarget.label}
+        target={preview.nameTarget.target}
+        fee={preview.fee}
+        from={from}
+        context={context}
+        footer={
+          <ReviewButtons
+            secondaryLabel={t("transferReview.cancel")}
+            onSecondary={onReject}
+            primaryLabel={submitting ? t("approval.signing") : t("transferReview.sign")}
+            onPrimary={() => void handleSign()}
+            warned={false}
+            busy={submitting}
+          />
+        }
+      >
+        {errorLine}
+      </NameTargetReview>
+    );
+  }
 
   if (transfer) {
     const own = origin === WALLET_APPROVAL_ORIGIN;

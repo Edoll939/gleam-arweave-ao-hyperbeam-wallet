@@ -91,6 +91,22 @@ export interface CollectibleSendRequest extends CollectibleSendDraft {
   fee: Winston | null;
 }
 
+/** A popup request to point a held Permaweb Name at another id. */
+export interface NameTargetDraft {
+  walletId: string;
+  /** The name's carrier process. */
+  carrier: string;
+  /** Shown as `@label`; never signed. */
+  label: string;
+  /** The id the name will point to. */
+  target: string;
+}
+
+/** A reviewed name change; `fee` is the quote the user saw: the reward plus the 1 winston a set carries. */
+export interface NameTargetRequest extends NameTargetDraft {
+  fee: Winston | null;
+}
+
 const ARWEAVE_ID = /^[A-Za-z0-9_-]{43}$/;
 
 /**

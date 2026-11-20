@@ -16,7 +16,8 @@ export type ApprovalKind =
   | "addToken"
   | "transfer"
   | "pointsProof"
-  | "scanAttestation";
+  | "scanAttestation"
+  | "setNameTarget";
 
 /**
  * A dApp's self-reported identity, passed to `connect()` per the ArConnect
@@ -69,7 +70,8 @@ export interface SigningApprovalPreview {
     | "transferAoTokens"
     | "signMessage"
     | "transfer"
-    | "pointsProof";
+    | "pointsProof"
+    | "setNameTarget";
   recipient: string | null;
   amount: string | null;
   fee: string | null;
@@ -78,6 +80,8 @@ export interface SigningApprovalPreview {
   tokenTicker: string | null;
   /** Set for a wallet `transfer` that sends this collectible, or a `transferAoTokens` call that moves it; `amount` is then 0 AR for a wallet send, and 1 for a token transfer. */
   collectible?: CollectibleRef | null;
+  /** Set for a `setNameTarget`: the name and the id it will point to. `fee` is then the reward plus the 1 winston the set carries. */
+  nameTarget?: NameTargetPreview | null;
   /**
    * Set when a transaction looks like a token transfer (`ao/l1-transfer.ts`)
    * that can't be read cleanly, so it shows as the plain transaction with a
@@ -114,6 +118,12 @@ export interface SigningApprovalPreview {
      */
     unreadableTokenTransfer?: boolean;
   }> | null;
+}
+
+export interface NameTargetPreview {
+  carrier: string;
+  label: string;
+  target: string;
 }
 
 /**
@@ -240,6 +250,8 @@ export type DeviceSigningSummary =
   | { kind: "l1TokenTransfer"; process: string; recipient: string; quantity: string; fee: string }
   /** A zero-AR L1 transaction whose tags move one collectible (`ao/collectible-transfer.ts`). */
   | { kind: "collectibleTransfer"; asset: string; recipient: string; fee: string }
+  /** A 1-winston L1 `set` on a name's carrier (`ao/name-target.ts`). `fee` is the reward plus that winston. */
+  | { kind: "nameTarget"; carrier: string; target: string; fee: string }
   | {
       kind: "dataItem";
       target: string | null;

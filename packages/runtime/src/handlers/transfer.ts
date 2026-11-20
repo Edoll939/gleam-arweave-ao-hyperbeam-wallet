@@ -9,6 +9,7 @@ import { getBalance as getArBalance } from "@gleam/core/src/arweave/balance.ts";
 import { signTransactionWithSigner, type ArweaveTransactionJson } from "@gleam/core/src/arweave/transaction.ts";
 import { assertCoversNetworkFee, prepareCollectibleTransfer } from "@gleam/core/src/ao/collectible-transfer.ts";
 import { estimateL1TransferFee, prepareL1TokenTransfer } from "@gleam/core/src/ao/l1-transfer.ts";
+import { assertHoldsName, estimateNameTargetFee, prepareNameTarget } from "@gleam/core/src/ao/name-target.ts";
 import {
   finishTransfer as finishAoTransfer,
   prepareTransfer as prepareAoTransfer,
@@ -22,6 +23,8 @@ import {
   type ActivityEntry,
   type CollectibleSendDraft,
   type CollectibleSendRequest,
+  type NameTargetDraft,
+  type NameTargetRequest,
   type RecipientAssessment,
   type NetworkSettings,
   type Signer,
@@ -39,7 +42,8 @@ import type { KeySession } from "./key-session";
 import { userErrorMessage } from "@gleam/core/src/models/user-errors.ts";
 import { WALLETS_KEY, NETWORK_SETTINGS_KEY, CONTACTS_KEY, ACTIVITY_LOG_KEY_PREFIX } from "../storage-keys";
 import { dappError } from "../dapp-error";
-import { assertTransferMatches } from "./prepared-check";
+import { assertNameTargetMatches, assertTransferMatches } from "./prepared-check";
+import { readL1NodeUrls } from "../peers";
 
 /**
  * Background-side implementation of `ProtocolMap`'s `estimateTransfer`/
@@ -74,13 +78,15 @@ export type EstimateTransferRequest = SubmitTransferRequest;
 /** Opens the approval window for a hardware wallet's send; `ApprovalHandler.requestWalletTransfer` behind the scenes. */
 export interface DeviceTransferApprovals {
   requestTransfer(req: SubmitTransferRequest): Promise<{ txId: string }>;
+  /** `ApprovalHandler.requestNameTarget` behind the scenes. */
+  requestNameTarget?(req: NameTargetRequest): Promise<{ txId: string }>;
 }
 
 /**
  * The fee the user saw, which an L1 send pays exactly. There is no fallback
  * to a fresh quote: that would let the gateway set the fee after the review.
  */
-function approvedFee(req: SubmitTransferRequest): Winston {
+function approvedFee(req: { fee?: Winston | null }): Winston {
   // Checked by shape: arweave-js fetches its own price for an undefined reward.
   if (typeof req.fee !== "string" || !/^\d+$/.test(req.fee)) throw new Error(userErrorMessage("noApprovedFee"));
   return req.fee;
@@ -109,6 +115,8 @@ function isValidActivityEntry(value: unknown): value is ActivityEntry {
 /** The collectibles cache a sent collectible is dropped from; `ReadsHandler` behind the scenes. */
 export interface CollectibleCache {
   forgetCollectible(req: { address: string; id: string }): Promise<void>;
+  /** Shows a name's new target before the next discovery reads it. */
+  setCachedNameTarget?(req: { address: string; id: string; target: string }): Promise<void>;
 }
 
 /** Where a token's transfers go; `ReadsHandler` behind the scenes, which caches it with the token's metadata. */
@@ -278,6 +286,105 @@ export class TransferHandler {
         ...(req.collectible.imageUrl !== undefined ? { imageUrl: req.collectible.imageUrl } : {}),
       },
     });
+  }
+
+  /** Where the carrier's live state is read: the gateway, the L1 token nodes, then the active peer. */
+  private async carrierHosts(settings: NetworkSettings): Promise<string[]> {
+    const nodes = await readL1NodeUrls(this.storage);
+    return [...new Set([settings.gatewayUrl, ...nodes, ...(settings.activePeerUrl ? [settings.activePeerUrl] : [])])];
+  }
+
+  /** The review's quote for pointing a name elsewhere; fails early when the wallet's AR can't pay it. */
+  async estimateNameTarget(req: NameTargetDraft): Promise<TransferFeeQuote> {
+    const settings = await this.loadNetworkSettings();
+    const wallet = await this.loadWallet(req.walletId);
+    const [fee, balance] = await Promise.all([
+      estimateNameTargetFee(settings.gatewayUrl, req.carrier),
+      getArBalance(wallet.address, settings.gatewayUrl),
+    ]);
+    assertCoversNetworkFee(balance, fee);
+    return { fee };
+  }
+
+  /**
+   * Points a held name at `req.target`. A hardware wallet signs in the
+   * approval window; a keyfile signs here, after the same build is read
+   * back against the request.
+   */
+  async setNameTarget(req: NameTargetRequest): Promise<{ txId: string }> {
+    const method = await this.keySession.getWalletMethod(req.walletId);
+    const refusal = method === null ? null : capabilityRefusal(method, "signTransaction", "change a name's target");
+    if (refusal) throw new Error(refusal);
+    if (method !== null && isHardwareWalletMethod(method)) {
+      if (!this.approvals?.requestNameTarget) throw new Error(dappError("Hardware wallet name changes aren't wired to the approval window."));
+      return this.approvals.requestNameTarget(req);
+    }
+    const settings = await this.loadNetworkSettings();
+    const signer = await this.signerFor(req.walletId);
+    let txId: string;
+    try {
+      const unsigned = await this.prepareDeviceNameTarget(req, signer.owner);
+      assertNameTargetMatches({ carrier: req.carrier, target: req.target, fee: approvedFee(req) }, unsigned);
+      ({ txId } = await finishArweaveTransfer(
+        settings.gatewayUrl,
+        unsigned.transaction,
+        await signTransactionWithSigner(unsigned.transaction, signer),
+        signer.owner,
+      ));
+    } catch (error) {
+      console.error(`setNameTarget failed (carrier=${req.carrier}):`, error);
+      throw error;
+    }
+    await this.recordNameTarget(signer.address, req);
+    return { txId };
+  }
+
+  /**
+   * The unsigned `set` `ownerB64Url` signs. The carrier's state is read
+   * live first: a name sold or listed since the gallery loaded is refused
+   * before anything is signed.
+   */
+  async prepareDeviceNameTarget(req: NameTargetRequest, ownerB64Url: string): Promise<UnsignedPayload & { kind: "transaction" }> {
+    const settings = await this.loadNetworkSettings();
+    const wallet = await this.loadWallet(req.walletId);
+    const fee = approvedFee(req);
+    const [, balance] = await Promise.all([
+      assertHoldsName(req.carrier, wallet.address, await this.carrierHosts(settings)),
+      getArBalance(wallet.address, settings.gatewayUrl),
+    ]);
+    assertCoversNetworkFee(balance, fee);
+    const transaction = await prepareNameTarget(settings.gatewayUrl, ownerB64Url, req.carrier, req.target, fee);
+    return { kind: "transaction", transaction };
+  }
+
+  /** Posts a device-signed `set` and updates the cached name. */
+  async finishDeviceNameTarget(
+    req: NameTargetRequest,
+    unsigned: UnsignedPayload,
+    signature: Uint8Array,
+    expectedOwner: string,
+  ): Promise<{ txId: string }> {
+    if (unsigned.kind !== "transaction") throw new Error(dappError("A name change is an L1 transaction."));
+    const wallet = await this.loadWallet(req.walletId);
+    const settings = await this.loadNetworkSettings();
+    let txId: string;
+    try {
+      ({ txId } = await finishArweaveTransfer(settings.gatewayUrl, unsigned.transaction, signature, expectedOwner));
+    } catch (error) {
+      console.error(`Device name change failed (carrier=${req.carrier}):`, error);
+      throw error;
+    }
+    await this.recordNameTarget(wallet.address, req);
+    return { txId };
+  }
+
+  /** Never throws: the network has already accepted the change. */
+  private async recordNameTarget(address: string, req: NameTargetRequest): Promise<void> {
+    try {
+      await this.collectibles?.setCachedNameTarget?.({ address, id: req.carrier, target: req.target });
+    } catch (error) {
+      console.error(`Couldn't update the cached name ${req.carrier}:`, error);
+    }
   }
 
   /**

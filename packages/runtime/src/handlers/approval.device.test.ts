@@ -199,7 +199,10 @@ beforeEach(async () => {
     { origin: ORIGIN, walletId: HW_ID, permissions: ["SIGNATURE"], createdAt: 0, expiresAt: null, budget: null },
   ]);
   presenter = createFakePresenter();
-  transfer = new TransferHandler(storage, keySession, { requestTransfer: (req) => handler.requestWalletTransfer(req) });
+  transfer = new TransferHandler(storage, keySession, {
+    requestTransfer: (req) => handler.requestWalletTransfer(req),
+    requestNameTarget: (req) => handler.requestNameTarget(req),
+  });
   handler = new ApprovalHandler(storage, keySession, presenter, transfer, "https://bundler.example");
 });
 
@@ -747,6 +750,72 @@ describe("Transfers from a hardware wallet sign in the approval window", () => {
 
     expect(device.payloads[0]).toMatchObject({ kind: "transaction", transaction: { target: PROCESS_ID, quantity: "1", reward: "999" } });
     expect(device.summaries[0]).toEqual({ kind: "collectibleTransfer", asset: PROCESS_ID, recipient: RECIPIENT, fee: "1000" });
+  });
+
+  describe("a popup name change", () => {
+    const TARGET = "t".repeat(43);
+
+    /** The network, plus the carrier's live state held by `holder`. */
+    function mockCarrier(holder: () => string) {
+      const calls = mockNetwork();
+      const network = globalThis.fetch;
+      globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes(`/${PROCESS_ID}~process@1.0/now`)) {
+          return Response.json({ "execution-device": "carrier@1.0", balances: { [holder()]: "1" } });
+        }
+        return url.endsWith("/balance") ? new Response("1000000") : network(input, init);
+      }) as unknown as typeof fetch;
+      return calls;
+    }
+
+    const request = () => ({ walletId: HW_ID, carrier: PROCESS_ID, label: "alice", target: TARGET, fee: "1001" });
+
+    it("shows @name → target, has the device sign the 1-winston set, and posts it", async () => {
+      const calls = mockCarrier(() => address);
+      const { pending, view, requestId, device } = await approveOnDevice(() => transfer.setNameTarget(request()));
+
+      expect(view).toMatchObject({
+        kind: "setNameTarget",
+        origin: WALLET_APPROVAL_ORIGIN,
+        preview: { kind: "setNameTarget", recipient: null, fee: "1001", nameTarget: { carrier: PROCESS_ID, label: "alice", target: TARGET } },
+      });
+      expect(device.payloads[0]).toMatchObject({
+        kind: "transaction",
+        transaction: { target: PROCESS_ID, quantity: "1", reward: "1000", data: "" },
+      });
+      expect(device.summaries).toEqual([{ kind: "nameTarget", carrier: PROCESS_ID, target: TARGET, fee: "1001" }]);
+
+      await handler.submitDeviceSignature({ requestId, signatures: await deviceSign(device, deviceKey) });
+
+      const { txId } = (await pending) as { txId: string };
+      expect(txId).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      expect(calls).toContain(`POST ${GATEWAY}:443/tx`);
+    });
+
+    it("refuses before the device step when the name has changed hands since the review", async () => {
+      const calls = mockCarrier(() => RECIPIENT);
+      const pending = transfer.setNameTarget(request());
+      pending.catch(() => {});
+      await vi.waitFor(() => expect(presenter.presented.length).toBe(1));
+      await expect(handler.resolveApproval({ requestId: presenter.presented[0]!, approved: true })).rejects.toThrow(
+        "This wallet no longer holds this name.",
+      );
+      expect(calls.some((call) => call.startsWith("POST") && call.endsWith("/tx"))).toBe(false);
+    });
+
+    it("refuses a built set whose target differs from the approved one", async () => {
+      mockCarrier(() => address);
+      tamper.transaction = null;
+      const prepare = transfer.prepareDeviceNameTarget.bind(transfer);
+      vi.spyOn(transfer, "prepareDeviceNameTarget").mockImplementation(async (req, owner) =>
+        prepare({ ...req, target: RECIPIENT }, owner),
+      );
+      const pending = transfer.setNameTarget(request());
+      pending.catch(() => {});
+      await vi.waitFor(() => expect(presenter.presented.length).toBe(1));
+      await expect(handler.resolveApproval({ requestId: presenter.presented[0]!, approved: true })).rejects.toThrow(/tags/);
+    });
   });
 
   it("a popup AO send posts the device-signed Transfer to the MU and logs it", async () => {

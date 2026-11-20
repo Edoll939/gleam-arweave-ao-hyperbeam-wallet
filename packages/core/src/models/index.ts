@@ -44,7 +44,7 @@ export type { Announcement } from "./announcement";
 export type { ReviewMoment } from "./review-prompt";
 export { isValidArweaveAddress, isValidContact } from "./contact";
 export type { Winston, Balance, PendingAmounts, PendingTransfer, TokenBalance } from "./balance";
-export type { Collectible, CollectibleKind, CollectibleRef, CollectibleSendDraft, CollectibleSendRequest, PermawebName } from "./collectible";
+export type { Collectible, CollectibleKind, CollectibleRef, CollectibleSendDraft, CollectibleSendRequest, NameTargetDraft, NameTargetRequest, PermawebName } from "./collectible";
 export { collectibleKind, collectibleSendRefusal, nameSiteUrl, permawebNameLabel } from "./collectible";
 export type {
   TokenMetadata,
@@ -73,6 +73,7 @@ export type {
   DeviceSigningRequest,
   DeviceSigningSummary,
   SigningApprovalPreview,
+  NameTargetPreview,
   ScanAttestationApprovalPreview,
 } from "./approval";
 export { WALLET_APPROVAL_ORIGIN } from "./approval";
