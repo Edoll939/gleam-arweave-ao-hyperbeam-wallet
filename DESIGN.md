@@ -176,6 +176,7 @@ Paper is a light theme on a grey paper with a little warmth. It shares dark's la
 - **Material.** The token sheet lifts off the paper with a soft edge, and settles in once.
 - **Barely any texture.** The header paper is flat colour. The token sheet has a grain you only notice up close; anything stronger, or ruled lines, competes with the rows.
 - **Light on paper.** The beam is the one thing not printed: clear spectral stops that spill a soft glow of their own colours onto the sheet, like a prism's spectrum on a card. Warning, gains and losses are a step deeper than light's so they hold on the paper.
+- **Glass catches the light** only where it faces the beam: the sheet's top edge while undocked, and the commit buttons (primary and destructive) with a hairline inside the top and a faint sheen. Tiles and chips stay pressed in.
 - **Bare chart lines.** The portfolio and token charts draw the line alone, with no shading under it, its gain or loss colour mixed a quarter of the way toward the paper.
 
 The paper-only touches use the `paper:` variant and the `.gleam-*` paper classes in `theme.css`.
