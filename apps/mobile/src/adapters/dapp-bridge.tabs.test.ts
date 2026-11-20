@@ -58,27 +58,28 @@ describe("serveDappTabs", () => {
   });
 });
 
-describe("the dApp tab after the browser closes", () => {
-  function openBridge(closeFails = false) {
-    let navigate: (event: unknown) => void = () => {};
-    const plugin = {
-      open: vi.fn(async () => {}),
-      close: vi.fn(async () => {
-        if (closeFails) throw new Error("native failed");
-      }),
-      reload: vi.fn(async () => {}),
-      setHidden: vi.fn(async () => {}),
-      postMessage: vi.fn(async () => ({ delivered: true })),
-      addListener: vi.fn(async (name: string, listener: (event: unknown) => void) => {
-        if (name === "navigation") navigate = listener;
-        return { remove: async () => {} };
-      }),
-    } as unknown as DappViewBridgePlugin;
-    const runtime = { pageCall: vi.fn(async () => undefined), tabClosed: vi.fn(async () => {}) };
-    const bridge = createDappBridge({ plugin, runtime, providerScript: "" });
-    return { bridge, runtime, navigate: (url: string) => navigate({ url, canGoBack: false, loading: false }) };
-  }
+/** Opens a bridge with a fake plugin that captures the `navigation` listener. */
+function openBridge(closeFails = false) {
+  let navigate: (event: unknown) => void = () => {};
+  const plugin = {
+    open: vi.fn(async () => {}),
+    close: vi.fn(async () => {
+      if (closeFails) throw new Error("native failed");
+    }),
+    reload: vi.fn(async () => {}),
+    setHidden: vi.fn(async () => {}),
+    postMessage: vi.fn(async () => ({ delivered: true })),
+    addListener: vi.fn(async (name: string, listener: (event: unknown) => void) => {
+      if (name === "navigation") navigate = listener;
+      return { remove: async () => {} };
+    }),
+  } as unknown as DappViewBridgePlugin;
+  const runtime = { pageCall: vi.fn(async () => undefined), tabClosed: vi.fn(async () => {}) };
+  const bridge = createDappBridge({ plugin, runtime, providerScript: "" });
+  return { bridge, runtime, navigate: (url: string) => navigate({ url, canGoBack: false, loading: false }) };
+}
 
+describe("the dApp tab after the browser closes", () => {
   it("has no active tab once the browser closes, and tells subscribers", async () => {
     const { bridge, navigate, runtime } = openBridge();
     await bridge.listening;
@@ -117,5 +118,36 @@ describe("the dApp tab after the browser closes", () => {
     stop();
     await bridge.close();
     expect(onChange).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("the dApp tab after a cross-origin navigation", () => {
+  it("keeps the tab id on same-origin navigation", async () => {
+    const { bridge, navigate } = openBridge();
+    await bridge.listening;
+
+    navigate("https://dapp.example/");
+    await expect(bridge.tabs.webTabs()).resolves.toEqual([{ id: 1, url: "https://dapp.example/" }]);
+
+    navigate("https://dapp.example/other");
+    await expect(bridge.tabs.webTabs()).resolves.toEqual([{ id: 1, url: "https://dapp.example/other" }]);
+    await expect(bridge.tabs.activeTab()).resolves.toEqual({ id: 1, url: "https://dapp.example/other" });
+  });
+
+  it("replaces the tab id on cross-origin navigation, and the old id stops routing", async () => {
+    const { bridge, navigate, runtime } = openBridge();
+    await bridge.listening;
+
+    navigate("https://dapp.example/");
+    await expect(bridge.tabs.webTabs()).resolves.toEqual([{ id: 1, url: "https://dapp.example/" }]);
+
+    navigate("https://other.example/");
+    await expect(bridge.tabs.webTabs()).resolves.toEqual([{ id: 2, url: "https://other.example/" }]);
+    await expect(bridge.tabs.activeTab()).resolves.toEqual({ id: 2, url: "https://other.example/" });
+    expect(runtime.tabClosed).toHaveBeenCalledWith(1);
+
+    await expect(
+      bridge.tabs.send(1, "providerEvent", { origin: "https://dapp.example/", event: "accountsChanged", data: [] }),
+    ).rejects.toThrow("That page is no longer open.");
   });
 });
