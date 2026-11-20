@@ -33,7 +33,7 @@ import { useSubmitTransfer } from "../../activity/src/useSubmitTransfer";
 import { feeFiatText } from "../../../transfer-review/model";
 import { validateSendAmount } from "../../activity/src/validateSendAmount";
 import { amountSchema, firstIssueMessage, recipientSchema } from "./sendFormSchema";
-import { TokenInfoPanel } from "./TokenInfoPanel";
+import { TokenHeaderGlyph, TokenHeaderTitle, TokenInfoPanel } from "./TokenInfoPanel";
 import { hasPriceHistory, TokenPriceChart } from "./TokenPriceChart";
 import { useLookalikeOf } from "./useLookalikeOf";
 import { fetchSendFeeQuote, useRecipientAssessment, useSendFeeQuote } from "./useSendQuotes";
@@ -671,11 +671,15 @@ function ComposeStep({
   if (showInfo) {
     return (
       <div className="flex min-h-full flex-col">
-        <ScreenHeader title={t("send.tokenDetails")} onBack={() => onShowInfo(false)} />
+        <ScreenHeader
+          title={t("send.tokenDetails")}
+          center={<TokenHeaderTitle token={token} />}
+          onBack={() => onShowInfo(false)}
+          end={<TokenHeaderGlyph token={token} logoUrl={sendTokenLogo(token, readRowVisibility(wallet.address), tokenLogos)} />}
+        />
         <div className="px-6 py-5 phone:px-5">
           <TokenInfoPanel
             token={token}
-            logoUrl={sendTokenLogo(token, readRowVisibility(wallet.address), tokenLogos)}
             balanceDisplay={balanceDisplay}
             balanceValue={balanceValue}
             priceDisplay={price !== undefined && currency !== undefined && currency !== ticker ? formatCurrencyValue(price, currency) : undefined}

@@ -15,15 +15,12 @@ const AR_EXPLORER_URL = "https://lunar.arweave.net/#/transactions/";
  */
 export function TokenInfoPanel({
   token,
-  logoUrl,
   balanceDisplay,
   balanceValue,
   priceDisplay,
   chart,
 }: {
   token: TokenBalance | null;
-  /** Already filtered by the Token logos setting and the token's Show/Hide choice. */
-  logoUrl: string | undefined;
   balanceDisplay: string | undefined;
   /** The balance in the display currency, already formatted. */
   balanceValue: string | undefined;
@@ -33,24 +30,10 @@ export function TokenInfoPanel({
 }) {
   const t = useT();
   const ticker = token === null ? "AR" : displayTicker(token.ticker);
-  const name = token === null ? "Arweave" : (token.name ?? ticker);
   const denomination = token === null ? 12 : token.denomination;
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3">
-        <TokenGlyph
-          label={token === null ? "AR" : ticker.slice(0, 2).toUpperCase()}
-          tone={token === null ? 1 : 2}
-          logoUrl={logoUrl}
-          className="h-10 w-10 text-label"
-        />
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-body font-semibold text-foreground">{name}</span>
-          <span className="text-label text-muted">{ticker}</span>
-        </div>
-      </div>
-
       {chart}
 
       <dl className="flex flex-col gap-3">
@@ -78,6 +61,36 @@ export function TokenInfoPanel({
         {t("send.viewOnExplorer")}
       </a>
     </div>
+  );
+}
+
+/** The details screen's header title: the token's name, with its ticker quieter beside it when the two differ. */
+export function TokenHeaderTitle({ token }: { token: TokenBalance | null }) {
+  const ticker = token === null ? "AR" : displayTicker(token.ticker);
+  const name = token === null ? "Arweave" : (token.name ?? ticker);
+  return (
+    <span className="flex min-w-0 max-w-full items-baseline gap-1.5">
+      {/* eslint-disable-next-line gleam/type-scale -- matches ScreenHeader's 16px phone title. */}
+      <span className="truncate text-body font-semibold text-foreground phone:text-[1rem]">{name}</span>
+      {ticker !== name ? <span className="flex-shrink-0 text-label text-muted">{ticker}</span> : null}
+    </span>
+  );
+}
+
+/** The token's logo for the details screen's header. */
+export function TokenHeaderGlyph({
+  token,
+  logoUrl,
+}: {
+  token: TokenBalance | null;
+  /** Already filtered by the Token logos setting and the token's Show/Hide choice. */
+  logoUrl: string | undefined;
+}) {
+  const ticker = token === null ? "AR" : displayTicker(token.ticker);
+  return (
+    <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center phone:h-11 phone:w-11">
+      <TokenGlyph label={token === null ? "AR" : ticker.slice(0, 2).toUpperCase()} tone={token === null ? 1 : 2} logoUrl={logoUrl} className="h-8 w-8 text-caption" />
+    </span>
   );
 }
 
